@@ -1,0 +1,113 @@
+.quotations-page {
+  background-color: #0b0b0e;
+  min-height: 100vh;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+
+  .quotations-content {
+    padding: 24px 40px;
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+
+      h2 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .btn-create {
+        padding: 10px 20px;
+        background: #22c55e;
+        border: none;
+        border-radius: 20px;
+        color: #000;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #1ab252;
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+      }
+    }
+
+    .table-container {
+      background: #14141a;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      overflow: hidden;
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+
+        th {
+          background: #111116;
+          padding: 14px 18px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #a1a1aa;
+          text-transform: uppercase;
+          border-bottom: 1px solid #27272a;
+        }
+
+        td {
+          padding: 14px 18px;
+          font-size: 13px;
+          color: #ffffff;
+          border-bottom: 1px solid #1f1f24;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        tr {
+          &:hover td {
+            background: rgba(255, 255, 255, 0.02);
+          }
+        }
+
+        tr:last-child td {
+          border-bottom: none;
+        }
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+
+      &.status-sent {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.15);
+      }
+      &.status-confirmed {
+        color: #fb923c;
+        background: rgba(251, 146, 60, 0.15);
+      }
+      &.status-converted {
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.15);
+      }
+      &.status-rejected, &.status-expired {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+      }
+    }
+  }
+}

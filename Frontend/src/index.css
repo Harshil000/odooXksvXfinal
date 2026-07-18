@@ -117,3 +117,36 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.guard-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0b0b0e;
+  color: #ffffff;
+  font-family: var(--sans);
+}
+
+.guard-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(205, 164, 255, 0.1);
+  border-left-color: #cda4ff;
+  border-radius: 50%;
+  animation: guardSpinner 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+.guard-loading-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #a1a1aa;
+  letter-spacing: 0.5px;
+}
+
+@keyframes guardSpinner {
+  to { transform: rotate(360deg); }
+}

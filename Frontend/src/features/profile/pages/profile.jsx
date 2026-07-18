@@ -19,7 +19,7 @@ const Profile = () => {
         handleDeleteAddress 
     } = useProfile();
 
-    const { LogoutUser } = useAuth();
+    const { LogoutUser, refreshCompanyInfo } = useAuth();
 
     const fileInputRef = useRef(null);
     const companyLogoInputRef = useRef(null);
@@ -130,6 +130,7 @@ const Profile = () => {
 
         await saveAll(null, formData, isVendor, true);
         setIsEditingCompany(false);
+        await refreshCompanyInfo();
     };
 
     // Handle User Avatar Upload
@@ -159,6 +160,7 @@ const Profile = () => {
             formData.append("pincode", companyForm.pincode);
             formData.append("companyProfileImage", file);
             await saveAll(null, formData, isVendor, true);
+            await refreshCompanyInfo();
         }
     };
 
@@ -168,8 +170,9 @@ const Profile = () => {
     };
 
     // Handle Company Logo Instant Delete
-    const handleCompanyLogoDeleteClick = () => {
-        handleCompanyImageDelete(companyForm);
+    const handleCompanyLogoDeleteClick = async () => {
+        await handleCompanyImageDelete(companyForm);
+        await refreshCompanyInfo();
     };
 
     // Handle Add Address Submit
