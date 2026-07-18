@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Edit2, Trash2, Shield, Lock, MapPin, Plus, Check, ShoppingCart, User as UserIcon } from "lucide-react";
+import { Edit2, Trash2, Shield, Lock, MapPin, Plus, Check, ShoppingCart, User as UserIcon, LogOut } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
 import { ToastContainer } from "react-toastify";
 import { Link } from "react-router";
+import useAuth from "../../auth/hook/useAuth";
 import "../styles/profile.scss";
 
 const Profile = () => {
@@ -16,6 +17,8 @@ const Profile = () => {
         handleAddAddress,
         handleDeleteAddress 
     } = useProfile();
+
+    const { LogoutUser } = useAuth();
 
     const fileInputRef = useRef(null);
     const companyLogoInputRef = useRef(null);
@@ -226,15 +229,10 @@ const Profile = () => {
                     {/* Security Card */}
                     <div className="sidebar-card security-card">
                         <h3>Security Overview</h3>
-                        <div className="security-detail">
-                            <div className="check-icon-circle">
-                                <Check size={14} />
-                            </div>
-                            <div className="security-text">
-                                <span className="sec-title">Two-Factor Auth</span>
-                                <span className="sec-desc">Enabled via SMS</span>
-                            </div>
-                        </div>
+                        <button onClick={LogoutUser} className="logout-btn">
+                            <LogOut size={14} />
+                            Log Out
+                        </button>
                         <Link to="/change-password" className="change-password-btn" style={{ textDecoration: "none" }}>
                             <Lock size={14} />
                             Change Password
