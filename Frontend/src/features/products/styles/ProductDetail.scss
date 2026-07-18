@@ -133,6 +133,14 @@
       .image-column {
         flex: 1;
         max-width: 500px;
+        position: sticky;
+        top: 100px;
+        align-self: flex-start;
+        
+        @media (max-width: 900px) {
+          position: static;
+          max-width: 100%;
+        }
         
         .image-box {
           border-radius: 12px;

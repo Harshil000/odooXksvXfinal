@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useProductDetails } from '../hooks/useProductDetails';
 import { useCart } from '../../cart/hooks/useCart';
@@ -7,6 +7,28 @@ import Navbar from '../../dashboard/components/Navbar';
 import { AuthContext } from '../../auth/auth.context';
 import { removeProduct } from '../services/product.service';
 import '../styles/ProductDetail.scss';
+
+/**
+ * Convert any date or ISO string to local YYYY-MM-DDTHH:MM representation in IST timezone (+05:30).
+ */
+function toISTString(dateInput) {
+  if (!dateInput) return "";
+  const date = new Date(dateInput);
+  // Add +05:30 offset
+  const offsetMs = 5.5 * 60 * 60 * 1000;
+  const localTime = new Date(date.getTime() + offsetMs);
+  return localTime.toISOString().slice(0, 16);
+}
+
+/**
+ * Parses a local datetime-local value as an explicit IST timezone (+05:30) date, returning its ISO UTC string.
+ */
+function parseISTToUTC(dateStr) {
+  if (!dateStr) return null;
+  const hasTimezone = dateStr.includes("Z") || dateStr.match(/[+-]\d{2}:\d{2}$/);
+  const targetStr = hasTimezone ? dateStr : `${dateStr}:00+05:30`;
+  return new Date(targetStr).toISOString();
+}
 
 const ProductDetail = () => {
   const { p_id } = useParams();
@@ -36,12 +58,27 @@ const ProductDetail = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user && (user.role === 'admin' || user.role === 'ADMIN');
 
+  // Date limit checks
+  const minDateTime = useMemo(() => {
+    return toISTString(new Date());
+  }, []);
+
   const handleAddToCart = async () => {
     if (!selectedPlanId) return alert("Please select a Rental Plan.");
     if (!startDate || !endDate) return alert("Please select rental start and end dates.");
-    if (new Date(endDate) <= new Date(startDate)) return alert("End date must be after start date.");
+    
+    const now = new Date();
+    const startUTC = new Date(parseISTToUTC(startDate));
+    const endUTC = new Date(parseISTToUTC(endDate));
+    
+    if (startUTC < now) {
+      return alert("Start date and time cannot be in the past.");
+    }
+    if (endUTC <= startUTC) {
+      return alert("End date must be after Start date.");
+    }
 
-    const success = await addToCart(p_id, selectedPlanId, quantity, new Date(startDate).toISOString(), new Date(endDate).toISOString());
+    const success = await addToCart(p_id, selectedPlanId, quantity, startUTC.toISOString(), endUTC.toISOString());
     if (success) {
       setCartOpen(true);
     }
@@ -246,18 +283,20 @@ const ProductDetail = () => {
 
             <div className="action-box">
               <div className="rental-period">
-                <label>Rental Period (UTC + 01:00)</label>
+                <label>Rental Period (IST)</label>
                 <div className="date-inputs">
                   <input 
                     type="datetime-local" 
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    min={minDateTime}
                   />
                   <span className="arrow">➔</span>
                   <input 
                     type="datetime-local" 
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate || minDateTime}
                   />
                 </div>
               </div>
