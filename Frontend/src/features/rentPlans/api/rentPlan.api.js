@@ -17,3 +17,13 @@ export async function createRentPlan(productId, payload) {
     throw getErrorPayload(error, "Unable to create rent plan");
   }
 }
+
+export async function deleteRentPlan(r_id) {
+  try {
+    const response = await httpClient.delete(`/rent-plans/${r_id}`);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Unable to delete rent plan");
+  }
+}
+

@@ -77,9 +77,27 @@ const Navbar = ({
         >
           Assets
         </a>
-        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate("/"); }}>Products</a>
-        <a href="#" className="nav-link">Reports</a>
-        <a href="#" className="nav-link">Settings</a>
+        <a 
+          href="#" 
+          className={`nav-link ${activeSection === "products" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); navigate("/"); }}
+        >
+          Products
+        </a>
+        <a 
+          href="#" 
+          className={`nav-link ${activeSection === "reports" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); alert("Reports feature coming soon!"); }}
+        >
+          Reports
+        </a>
+        <a 
+          href="#" 
+          className={`nav-link ${activeSection === "settings" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); navigate("/profile"); }}
+        >
+          Settings
+        </a>
       </div>
 
       {/* Search */}

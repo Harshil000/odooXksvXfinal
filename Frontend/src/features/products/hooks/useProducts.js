@@ -3,6 +3,7 @@ import { loadProductCards } from "../services/product.service";
 
 export function useProducts() {
   const [products, setProducts] = useState([]);
+  const [attributes, setAttributes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -11,9 +12,10 @@ export function useProducts() {
 
     async function loadProducts() {
       try {
-        const productCards = await loadProductCards();
+        const data = await loadProductCards();
         if (active) {
-          setProducts(productCards);
+          setProducts(data.products);
+          setAttributes(data.attributes || []);
           setError(null);
         }
       } catch (err) {
@@ -35,5 +37,5 @@ export function useProducts() {
     };
   }, []);
 
-  return { products, loading, error };
+  return { products, attributes, loading, error };
 }

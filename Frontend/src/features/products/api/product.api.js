@@ -64,3 +64,13 @@ export async function createProductAsset(productId, qr) {
     throw getErrorPayload(error, "Unable to create asset");
   }
 }
+
+export async function deleteProduct(productId) {
+  try {
+    const response = await httpClient.delete(`/products/${productId}`);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Unable to delete product");
+  }
+}
+

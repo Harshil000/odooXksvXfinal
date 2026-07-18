@@ -5,6 +5,9 @@ import { loadProductRentPlans } from "../../rentPlans/services/rentPlan.service"
 export function useProductDetails(productId) {
   const [product, setProduct] = useState(null);
   const [image, setImage] = useState("");
+  const [images, setImages] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [attributes, setAttributes] = useState([]);
   const [rentPlans, setRentPlans] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
 
@@ -21,6 +24,9 @@ export function useProductDetails(productId) {
         if (active) {
           setProduct(productDetails.product);
           setImage(productDetails.image);
+          setImages(productDetails.images || []);
+          setVariants(productDetails.variants || []);
+          setAttributes(productDetails.attributes || []);
           setRentPlans(plans);
           setSelectedPlanId(plans[0]?.r_id || "");
         }
@@ -36,5 +42,5 @@ export function useProductDetails(productId) {
     };
   }, [productId]);
 
-  return { product, image, rentPlans, selectedPlanId, setSelectedPlanId };
+  return { product, image, images, variants, attributes, rentPlans, selectedPlanId, setSelectedPlanId };
 }
