@@ -1,6 +1,7 @@
 import {
   createAttribute,
-  getAttributesByProductId,
+  getAttributesByCompanyId,
+  createProductAttribute,
   updateAttribute,
   deleteAttribute,
   createAttributeKey,
@@ -19,13 +20,13 @@ import {
 
 export async function createAttributeController(req, res, next) {
   try {
-    const { p_id } = req.params;
+    const { c_id } = req.params;
     const { name } = req.body;
 
-    if (!p_id) return res.status(400).json({ message: "Product ID (p_id) is required" });
+    if (!c_id) return res.status(400).json({ message: "Company ID (c_id) is required" });
     if (!name || !name.trim()) return res.status(400).json({ message: "Attribute name is required" });
 
-    const attribute = await createAttribute(p_id, name);
+    const attribute = await createAttribute(c_id, name);
     return res.status(201).json({ message: "Attribute created successfully", attribute });
   } catch (error) {
     next(error);
@@ -34,11 +35,25 @@ export async function createAttributeController(req, res, next) {
 
 export async function getAttributesController(req, res, next) {
   try {
-    const { p_id } = req.params;
-    if (!p_id) return res.status(400).json({ message: "Product ID (p_id) is required" });
+    const { c_id } = req.params;
+    if (!c_id) return res.status(400).json({ message: "Company ID (c_id) is required" });
 
-    const attributes = await getAttributesByProductId(p_id);
+    const attributes = await getAttributesByCompanyId(c_id);
     return res.status(200).json({ attributes });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createProductAttributeController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    const { attri_id } = req.body;
+
+    if (!p_id || !attri_id) return res.status(400).json({ message: "Product ID and Attribute ID are required" });
+
+    const pa = await createProductAttribute(p_id, attri_id);
+    return res.status(201).json({ message: "Product attribute created successfully", product_attribute: pa });
   } catch (error) {
     next(error);
   }

@@ -4,6 +4,9 @@ import Register from "./features/auth/pages/Register";
 import VendorRegister from "./features/auth/pages/VendorRegister";
 import Profile from "./features/profile/pages/Profile";
 import ChangePassword from "./features/profile/pages/ChangePassword";
+import Home from "./pages/Home";
+import AddProduct from "./pages/AddProduct";
+import ProductDetail from "./pages/ProductDetail";
 
 const router = createBrowserRouter([
   {
@@ -11,7 +14,15 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Login />,
+        element: <Home />,
+      },
+      {
+        path: "add-product",
+        element: <AddProduct />,
+      },
+      {
+        path: "product/:p_id",
+        element: <ProductDetail />,
       },
     ]
   },

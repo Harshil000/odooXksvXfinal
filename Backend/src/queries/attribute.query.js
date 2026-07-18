@@ -3,28 +3,34 @@
 // ==========================================
 
 export const INSERT_ATTRIBUTE_QUERY = `
-INSERT INTO attributes (p_id, name)
+INSERT INTO attributes (c_id, name)
 VALUES ($1, $2)
-RETURNING attri_id, p_id, name;
+RETURNING attri_id, c_id, name;
 `;
 
-export const SELECT_ATTRIBUTES_BY_PRODUCT_ID_QUERY = `
-SELECT attri_id, p_id, name
+export const SELECT_ATTRIBUTES_BY_COMPANY_ID_QUERY = `
+SELECT attri_id, c_id, name
 FROM attributes
-WHERE p_id = $1;
+WHERE c_id = $1;
 `;
 
 export const UPDATE_ATTRIBUTE_QUERY = `
 UPDATE attributes
 SET name = $1
 WHERE attri_id = $2
-RETURNING attri_id, p_id, name;
+RETURNING attri_id, c_id, name;
 `;
 
 export const DELETE_ATTRIBUTE_QUERY = `
 DELETE FROM attributes
 WHERE attri_id = $1
 RETURNING attri_id;
+`;
+
+export const INSERT_PRODUCT_ATTRIBUTE_QUERY = `
+INSERT INTO product_attributes (p_id, attri_id)
+VALUES ($1, $2)
+RETURNING p_id, attri_id;
 `;
 
 // ==========================================
