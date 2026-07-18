@@ -4,7 +4,9 @@ import {
   getRentingOrderById,
   updateRentingOrderStatus,
   deleteRentingOrder,
+  getAllEnrichedOrders,
 } from "../repository/order.repository.js";
+import { findVendorById } from "../repository/vendor.repository.js";
 
 // ==========================================
 // RENTING ORDERS
@@ -12,7 +14,7 @@ import {
 
 export async function createOrderController(req, res, next) {
   try {
-    const { r_id, asset_id, email, start_date, end_date, delivery_status, total } = req.body;
+    const { r_id, asset_id, email, start_date, end_date, delivery_status, total, invoice_status } = req.body;
 
     if (!r_id) return res.status(400).json({ message: "Rent Plan ID (r_id) is required" });
     if (!asset_id) return res.status(400).json({ message: "Asset ID (asset_id) is required" });
@@ -22,7 +24,7 @@ export async function createOrderController(req, res, next) {
     if (!delivery_status) return res.status(400).json({ message: "Delivery status is required" });
     if (total === undefined) return res.status(400).json({ message: "Total price is required" });
 
-    const orderData = { r_id, asset_id, email, start_date, end_date, delivery_status, total };
+    const orderData = { r_id, asset_id, email, start_date, end_date, delivery_status, total, invoice_status };
     const order = await createRentingOrder(orderData);
 
     return res.status(201).json({ message: "Order created successfully", order });
@@ -80,6 +82,23 @@ export async function deleteOrderController(req, res, next) {
     if (!deleted) return res.status(404).json({ message: "Order not found" });
 
     return res.status(200).json({ message: "Order deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ==========================================
+// DASHBOARD — Enriched Orders
+// ==========================================
+
+export async function getDashboardOrdersController(req, res, next) {
+  try {
+    // Resolve vendor's company from JWT payload
+    const vendor = await findVendorById(req.user.id);
+    if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
+
+    const orders = await getAllEnrichedOrders(vendor.c_id);
+    return res.status(200).json({ orders });
   } catch (error) {
     next(error);
   }

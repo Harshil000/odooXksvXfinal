@@ -9,6 +9,8 @@ import {
   createProductImageController,
   deleteProductImageController,
   searchProductsController,
+  createAssetController,
+  getAssetsByProductIdController,
 } from "../controller/product.controller.js";
 
 const productRoute = Router();
@@ -44,5 +46,15 @@ productRoute.post("/:p_id/images", verifyAdmin, createProductImageController);
 
 // Delete a product image (Admin only)
 productRoute.delete("/images/:img_id", verifyAdmin, deleteProductImageController);
+
+// ==========================================
+// ASSETS
+// ==========================================
+
+// Get assets for a product
+productRoute.get("/:p_id/assets", verifyToken, getAssetsByProductIdController);
+
+// Create a new asset for a product
+productRoute.post("/:p_id/assets", verifyAdmin, createAssetController);
 
 export default productRoute;

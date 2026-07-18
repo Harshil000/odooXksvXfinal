@@ -6,6 +6,7 @@ import {
   getOrderByIdController,
   updateOrderStatusController,
   deleteOrderController,
+  getDashboardOrdersController,
 } from "../controller/order.controller.js";
 
 const orderRoute = Router();
@@ -13,6 +14,9 @@ const orderRoute = Router();
 // ==========================================
 // RENTING ORDERS
 // ==========================================
+
+// Dashboard enriched orders (any authenticated vendor)
+orderRoute.get("/dashboard", verifyToken, getDashboardOrdersController);
 
 // Get all orders (open to all authenticated users - could be restricted later)
 orderRoute.get("/", verifyToken, getAllOrdersController);

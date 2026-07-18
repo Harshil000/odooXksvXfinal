@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import './AddProduct.scss';
+import { getCurrentUser } from '../../auth/services/auth.api';
+import { createCompanyAttribute } from '../../attributes/api/attribute.api';
+import { loadCompanyAttributes, saveProductAttributes } from '../../attributes/services/attribute.service';
+import { saveProduct } from '../services/product.service';
+import { saveRentPlans } from '../../rentPlans/services/rentPlan.service';
+import { buildProductPayload } from '../utils/productPayload.util';
+import '../styles/AddProduct.scss';
 
 const AddProduct = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('general');
-  const [imagePreview, setImagePreview] = useState('');
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [companyAttributes, setCompanyAttributes] = useState([]);
   const [c_id, setCId] = useState(null);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
@@ -25,13 +31,14 @@ const AddProduct = () => {
     cost_price: '',
   });
 
-  const [rentalData, setRentalData] = useState({
-    periodicity: 'hourly', // ENUM: hourly, daily, nightly, weekly, monthly, yearly
+  const [rentPlans, setRentPlans] = useState([{
+    periodicity: 'hourly',
+    price: '',
     pickup: '',
     return: '',
     late_fees: '',
     security_deposit: '',
-  });
+  }]);
 
   const [attributes, setAttributes] = useState([
     { name: '', values: '' }
@@ -40,22 +47,13 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchContextAndAttributes = async () => {
       try {
-        // Fetch logged-in user/vendor info to get actual c_id
-        const userRes = await fetch('http://localhost:3000/api/auth/me', { credentials: 'include' });
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          const actualCId = userData.vendor?.c_id; // Vendors have c_id
-          
-          if (actualCId) {
-            setCId(actualCId);
-            
-            // Now fetch attributes for this company
-            const res = await fetch(`http://localhost:3000/api/attributes/company/${actualCId}`);
-            if (res.ok) {
-              const data = await res.json();
-              setCompanyAttributes(data.attributes || []);
-            }
-          }
+        const userData = await getCurrentUser();
+        const actualCId = userData.vendor?.c_id;
+
+        if (actualCId) {
+          setCId(actualCId);
+          const attributes = await loadCompanyAttributes(actualCId);
+          setCompanyAttributes(attributes);
         }
       } catch (err) {
         console.error("Failed to fetch attributes or context", err);
@@ -64,12 +62,24 @@ const AddProduct = () => {
     fetchContextAndAttributes();
   }, []);
 
-  const handleCreateNewAttribute = () => {
+  const handleCreateNewAttribute = async () => {
+    if (!c_id) {
+      alert("Company context is required before creating attributes.");
+      return;
+    }
+
     if (newAttributeName && newAttributeName.trim()) {
       const name = newAttributeName.trim();
       const existingAttr = companyAttributes.find(a => a.name.toLowerCase() === name.toLowerCase());
       if (!existingAttr) {
-        setCompanyAttributes([...companyAttributes, { name }]);
+        try {
+          const response = await createCompanyAttribute(c_id, { name });
+          setCompanyAttributes([...companyAttributes, response.attribute]);
+        } catch (error) {
+          console.error(error);
+          alert("Error creating attribute: " + (error.message || "Unable to create attribute"));
+          return;
+        }
       }
       setNewAttributeName('');
       setShowAttributeModal(false);
@@ -77,13 +87,15 @@ const AddProduct = () => {
   };
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length) {
+      Promise.all(files.map((file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      }))).then((images) => {
+        setImagePreviews((current) => [...current, ...images]);
+      });
     }
   };
 
@@ -98,108 +110,24 @@ const AddProduct = () => {
     }
 
     try {
-      // 1. Create Base Product
-      // Note: We use a hardcoded c_id for demo purposes (assuming company exists).
-      // In reality, this comes from auth context/token.
-      const productPayload = {
-        c_id: c_id,
-        pname: productData.pname,
-        description: productData.description || 'No description',
-        to_publish: productData.to_publish,
-        quantity: Number(productData.quantity),
-        product_type: salesData.product_type,
-        sales_price: Number(salesData.sales_price || 0),
-        cost_price: Number(salesData.cost_price || 0),
-      };
-      
-      if (imagePreview) {
-        productPayload.images = [imagePreview];
-      }
-
-      const resProduct = await fetch('http://localhost:3000/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(productPayload)
-      });
-      
-      const productResponse = await resProduct.json();
-      if (!resProduct.ok) throw new Error(productResponse.message);
-      
-      const p_id = productResponse.product.p_id;
-
-      // 2. Create Rent Plan
-      const rentPayload = {
-        deposit: Number(rentalData.security_deposit || 0),
-        penalty: Number(rentalData.late_fees || 0),
-        price: Number(salesData.sales_price || 0),
-        duration_type: rentalData.periodicity,
-        pickup_time: rentalData.pickup || null,
-        return_time: rentalData.return || null,
-      };
-
-      await fetch(`http://localhost:3000/api/rent-plans/product/${p_id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(rentPayload)
+      const productPayload = buildProductPayload({
+        companyId: c_id,
+        productData,
+        salesData,
+        imagePreviews,
       });
 
-      // 3. Create Attributes
-      for (const attr of attributes) {
-        if (attr.name.trim() && attr.values.trim()) {
-          // Check if attribute name already exists for company
-          let attri_id;
-          const existingAttr = companyAttributes.find(a => a.name.toLowerCase() === attr.name.toLowerCase());
-          
-          if (existingAttr && existingAttr.attri_id) {
-            attri_id = existingAttr.attri_id;
-          } else {
-            // Create Attribute for Company
-            const attrRes = await fetch(`http://localhost:3000/api/attributes/company/${c_id}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ name: attr.name })
-            });
-            const attrData = await attrRes.json();
-            attri_id = attrData.attribute.attri_id;
-            
-            // Also save locally so next iteration doesn't create duplicate
-            setCompanyAttributes([...companyAttributes, attrData.attribute]);
-          }
-          
-          // Link Attribute to Product
-          await fetch(`http://localhost:3000/api/attributes/product/${p_id}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ attri_id })
-          });
+      const product = await saveProduct(productPayload);
+      const p_id = product.p_id;
 
-          // Split comma separated values and create keys/values
-          const vals = attr.values.split(',').map(v => v.trim());
-          for (const val of vals) {
-            // First create a key
-            const keyRes = await fetch(`http://localhost:3000/api/attributes/${attri_id}/keys`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ key_name: val })
-            });
-            const keyData = await keyRes.json();
-            const key_id = keyData.key.key_id;
-            
-            // Then create a value for the key
-            await fetch(`http://localhost:3000/api/attributes/keys/${key_id}/values`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ value_name: val })
-            });
-          }
-        }
-      }
+      await saveRentPlans(p_id, rentPlans);
+      const savedAttributes = await saveProductAttributes({
+        companyId: c_id,
+        productId: p_id,
+        attributes,
+        companyAttributes,
+      });
+      setCompanyAttributes(savedAttributes);
 
       alert('Product added successfully!');
       navigate('/');
@@ -235,16 +163,31 @@ const AddProduct = () => {
               value={productData.pname}
               onChange={(e) => setProductData({...productData, pname: e.target.value})}
             />
+            <label style={{display: 'block', marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Description</label>
+            <textarea
+              className="product-description-input"
+              placeholder="Add product description"
+              value={productData.description}
+              onChange={(e) => setProductData({...productData, description: e.target.value})}
+            />
           </div>
 
           <div className="image-upload-box">
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
               style={{opacity: 0, position: 'absolute', inset: 0, cursor: 'pointer', zIndex: 10}}
             />
-            {imagePreview ? <img src={imagePreview} alt="Preview" /> : <span>📸 Add Image</span>}
+            {imagePreviews.length ? (
+              <div className="image-preview-grid">
+                {imagePreviews.slice(0, 4).map((image, index) => (
+                  <img src={image} alt={`Preview ${index + 1}`} key={`${image.slice(0, 24)}-${index}`} />
+                ))}
+                {imagePreviews.length > 4 && <span className="image-count">+{imagePreviews.length - 4}</span>}
+              </div>
+            ) : <span>Add Images</span>}
           </div>
         </div>
 
@@ -357,42 +300,89 @@ const AddProduct = () => {
           )}
 
           {activeTab === 'sales' && (
-            <div className="flex-columns">
-              <div className="column">
-                <h3 className="section-title">Rental</h3>
-                <div className="form-row">
-                  <label>Periodicity</label>
-                  <select value={rentalData.periodicity} onChange={(e) => setRentalData({...rentalData, periodicity: e.target.value})}>
-                    <option value="hourly">Hours</option>
-                    <option value="daily">Day</option>
-                    <option value="nightly">Night</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                </div>
-                <div className="form-row">
-                  <label>Pickup</label>
-                  <input type="time" value={rentalData.pickup} onChange={(e) => setRentalData({...rentalData, pickup: e.target.value})} />
-                </div>
-                <div className="form-row">
-                  <label>Return</label>
-                  <input type="time" value={rentalData.return} onChange={(e) => setRentalData({...rentalData, return: e.target.value})} />
-                </div>
-                <div className="form-row" style={{marginTop: '2rem'}}>
-                  <label>Late Fees $</label>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                    <input type="number" style={{minWidth: '80px'}} value={rentalData.late_fees} onChange={(e) => setRentalData({...rentalData, late_fees: e.target.value})} />
-                    <span style={{color: 'var(--text-secondary)'}}>per hour late</span>
+            <div className="rent-plans-container" style={{display: 'flex', flexDirection: 'column', gap: '2rem'}}>
+              {rentPlans.map((plan, index) => (
+                <div key={index} className="flex-columns" style={{border: '1px solid var(--border)', padding: '1rem', borderRadius: '8px', position: 'relative'}}>
+                  {rentPlans.length > 1 && (
+                    <button 
+                      onClick={() => setRentPlans(rentPlans.filter((_, i) => i !== index))}
+                      style={{position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'red', cursor: 'pointer'}}
+                    >
+                      🗑 Remove
+                    </button>
+                  )}
+                  <div className="column">
+                    <h3 className="section-title">Rental Plan {index + 1}</h3>
+                    <div className="form-row">
+                      <label>Periodicity</label>
+                      <select value={plan.periodicity} onChange={(e) => {
+                        const newPlans = [...rentPlans];
+                        newPlans[index].periodicity = e.target.value;
+                        setRentPlans(newPlans);
+                      }}>
+                        <option value="hourly">Hours</option>
+                        <option value="daily">Day</option>
+                        <option value="nightly">Night</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    <div className="form-row">
+                      <label>Price for this Duration $</label>
+                      <input type="number" value={plan.price} onChange={(e) => {
+                        const newPlans = [...rentPlans];
+                        newPlans[index].price = e.target.value;
+                        setRentPlans(newPlans);
+                      }} />
+                    </div>
+                    <div className="form-row">
+                      <label>Pickup</label>
+                      <input type="time" value={plan.pickup} onChange={(e) => {
+                        const newPlans = [...rentPlans];
+                        newPlans[index].pickup = e.target.value;
+                        setRentPlans(newPlans);
+                      }} />
+                    </div>
+                    <div className="form-row">
+                      <label>Return</label>
+                      <input type="time" value={plan.return} onChange={(e) => {
+                        const newPlans = [...rentPlans];
+                        newPlans[index].return = e.target.value;
+                        setRentPlans(newPlans);
+                      }} />
+                    </div>
+                  </div>
+                  <div className="column" style={{marginTop: '2.5rem'}}>
+                    <div className="form-row">
+                      <label>Late Fees $</label>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                        <input type="number" style={{minWidth: '80px'}} value={plan.late_fees} onChange={(e) => {
+                          const newPlans = [...rentPlans];
+                          newPlans[index].late_fees = e.target.value;
+                          setRentPlans(newPlans);
+                        }} />
+                        <span style={{color: 'var(--text-secondary)'}}>per {plan.periodicity} late</span>
+                      </div>
+                    </div>
+                    <div className="form-row" style={{marginTop: '1rem'}}>
+                      <label>Security Deposit $</label>
+                      <input type="number" value={plan.security_deposit} onChange={(e) => {
+                        const newPlans = [...rentPlans];
+                        newPlans[index].security_deposit = e.target.value;
+                        setRentPlans(newPlans);
+                      }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="column">
-                <h3 className="section-title">Rental Deposit</h3>
-                <div className="form-row">
-                  <label>Security Deposit $</label>
-                  <input type="number" value={rentalData.security_deposit} onChange={(e) => setRentalData({...rentalData, security_deposit: e.target.value})} />
-                </div>
+              ))}
+              <div style={{display: 'flex', justifyContent: 'center'}}>
+                <button 
+                  className="btn-save" 
+                  onClick={() => setRentPlans([...rentPlans, { periodicity: 'monthly', price: '', pickup: '', return: '', late_fees: '', security_deposit: '' }])}
+                >
+                  + Add Extra Rent Plan
+                </button>
               </div>
             </div>
           )}
@@ -423,3 +413,4 @@ const AddProduct = () => {
 };
 
 export default AddProduct;
+

@@ -5,6 +5,7 @@ import {
   SELECT_RENTING_ORDER_BY_ID_QUERY,
   UPDATE_RENTING_ORDER_STATUS_QUERY,
   DELETE_RENTING_ORDER_QUERY,
+  SELECT_ENRICHED_ORDERS_BY_COMPANY_QUERY,
 } from "../queries/order.query.js";
 
 // ==========================================
@@ -12,7 +13,7 @@ import {
 // ==========================================
 
 export async function createRentingOrder(orderData) {
-  const { r_id, asset_id, email, start_date, end_date, delivery_status, total } = orderData;
+  const { r_id, asset_id, email, start_date, end_date, delivery_status, total, invoice_status } = orderData;
 
   const pool = getPool();
   const result = await pool.query(INSERT_RENTING_ORDER_QUERY, [
@@ -23,6 +24,7 @@ export async function createRentingOrder(orderData) {
     end_date,
     delivery_status,
     total,
+    invoice_status || "nothing_to_invoice",
   ]);
   return result.rows[0];
 }
@@ -34,22 +36,32 @@ export async function getAllRentingOrders() {
 }
 
 export async function getRentingOrderById(rent_id) {
-
   const pool = getPool();
   const result = await pool.query(SELECT_RENTING_ORDER_BY_ID_QUERY, [rent_id]);
   return result.rows[0] || null;
 }
 
 export async function updateRentingOrderStatus(rent_id, delivery_status) {
-
   const pool = getPool();
   const result = await pool.query(UPDATE_RENTING_ORDER_STATUS_QUERY, [delivery_status, rent_id]);
   return result.rows[0] || null;
 }
 
 export async function deleteRentingOrder(rent_id) {
-
   const pool = getPool();
   const result = await pool.query(DELETE_RENTING_ORDER_QUERY, [rent_id]);
   return result.rows[0] || null;
 }
+
+// ==========================================
+// ENRICHED ORDERS (Dashboard)
+// Returns orders with product name, rent plan
+// details, filtered by company ID
+// ==========================================
+
+export async function getAllEnrichedOrders(c_id) {
+  const pool = getPool();
+  const result = await pool.query(SELECT_ENRICHED_ORDERS_BY_COMPANY_QUERY, [c_id]);
+  return result.rows;
+}
+

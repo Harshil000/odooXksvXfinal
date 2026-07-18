@@ -1,56 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import './ProductDetail.scss';
+import { useProductDetails } from '../hooks/useProductDetails';
+import { useCart } from '../../cart/hooks/useCart';
+import CartDrawer from '../../cart/components/CartDrawer';
+import '../styles/ProductDetail.scss';
 
 const ProductDetail = () => {
   const { p_id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
-  const [image, setImage] = useState('');
-  const [rentPlans, setRentPlans] = useState([]);
+  const { product, image, rentPlans, selectedPlanId, setSelectedPlanId } = useProductDetails(p_id);
+  const { addToCart, totals } = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
   
   // Form State
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/products/${p_id}`, {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setProduct(data.product);
-          if (data.images && data.images.length > 0) {
-            setImage(data.images[0].image_base64);
-          }
-        }
-        
-        // Fetch rent plans
-        const rentResponse = await fetch(`http://localhost:3000/api/rent-plans/product/${p_id}`, {
-          credentials: 'include'
-        });
-        if (rentResponse.ok) {
-          const rentData = await rentResponse.json();
-          setRentPlans(rentData.rentPlans || []);
-        }
-      } catch (error) {
-        console.error("Error fetching product details:", error);
-      }
-    };
-    fetchProductDetails();
-  }, [p_id]);
+  const handleAddToCart = async () => {
+    if (!selectedPlanId) return alert("Please select a Rental Plan.");
+    if (!startDate || !endDate) return alert("Please select rental start and end dates.");
+    if (new Date(endDate) <= new Date(startDate)) return alert("End date must be after start date.");
 
-  const handleAddToCart = () => {
-    console.log("Added to cart:", {
-      product_id: p_id,
-      quantity,
-      startDate,
-      endDate
-    });
-    alert(`Added ${quantity} x ${product?.pname || 'Product'} to cart!`);
+    const success = await addToCart(p_id, selectedPlanId, quantity, new Date(startDate).toISOString(), new Date(endDate).toISOString());
+    if (success) {
+      setCartOpen(true);
+    }
   };
 
   const handleWishlist = () => {
@@ -66,7 +41,10 @@ const ProductDetail = () => {
     );
   }
 
-  const priceLabel = `(Rs ${product.sales_price || product.cost_price || 0} / per ${product.duration || 'month'})`;
+  const selectedPlan = rentPlans.find(p => p.r_id === selectedPlanId);
+  const priceLabel = selectedPlan 
+    ? `(Rs ${selectedPlan.price} / per ${selectedPlan.duration_type})` 
+    : `(Rs ${product.sales_price || product.cost_price || 0} / per ${product.duration || 'month'})`;
 
   return (
     <div className="product-detail-container">
@@ -104,13 +82,13 @@ const ProductDetail = () => {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
           </button>
-          <button className="icon-btn">
+          <button className="icon-btn" onClick={() => setCartOpen(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1"></circle>
               <circle cx="20" cy="21" r="1"></circle>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
             </svg>
-            <span className="badge">0</span>
+            <span className="badge">{totals.totalItemsCount}</span>
           </button>
           <div className="profile-avatar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -206,17 +184,27 @@ const ProductDetail = () => {
                 <table className="rent-plans-table">
                   <thead>
                     <tr>
-                      <th>Plan Type</th>
+                      <th style={{width: '40px'}}>Select</th>
                       <th>Duration</th>
                       <th>Price</th>
+                      <th>Deposit</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rentPlans.map(plan => (
-                      <tr key={plan.r_id}>
-                        <td style={{ textTransform: 'capitalize' }}>{plan.type}</td>
-                        <td>{plan.duration_value}</td>
+                      <tr key={plan.r_id} onClick={() => setSelectedPlanId(plan.r_id)} style={{cursor: 'pointer'}}>
+                        <td>
+                          <input 
+                            type="radio" 
+                            name="rent_plan" 
+                            checked={selectedPlanId === plan.r_id} 
+                            onChange={() => setSelectedPlanId(plan.r_id)} 
+                            style={{cursor: 'pointer'}}
+                          />
+                        </td>
+                        <td style={{ textTransform: 'capitalize' }}>{plan.duration_type}</td>
                         <td>Rs {plan.price}</td>
+                        <td>Rs {plan.deposit}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -226,6 +214,7 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 };

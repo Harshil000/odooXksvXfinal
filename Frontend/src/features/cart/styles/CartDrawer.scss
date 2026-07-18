@@ -1,0 +1,426 @@
+// =========================================================
+// CART DRAWER STYLES
+// =========================================================
+
+$bg-page: #0b0b0e;
+$bg-nav: #111116;
+$bg-card: #14141a;
+$bg-input: #0f0f14;
+$border-color: #27272a;
+$border-light: #1f1f24;
+
+$accent: #cda4ff;
+$accent-hover: #b886ff;
+$accent-green: #22c55e;
+$accent-green-hover: #1ab252;
+$text-primary: #ffffff;
+$text-secondary: #a1a1aa;
+$text-muted: #52525b;
+
+$radius: 6px;
+$radius-pill: 20px;
+$transition: all 0.2s ease;
+
+.cart-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: cartFadeIn 0.2s ease;
+}
+
+.cart-drawer {
+  width: 100%;
+  max-width: 420px;
+  background: $bg-card;
+  border-left: 1px solid $border-color;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.5);
+  animation: cartSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+
+  .cart-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid $border-color;
+    background: $bg-nav;
+
+    .title-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .accent-icon {
+        color: $accent;
+      }
+
+      h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0;
+      }
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: $text-secondary;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 50%;
+      transition: $transition;
+
+      &:hover {
+        background: $border-color;
+        color: $text-primary;
+      }
+    }
+  }
+
+  .cart-drawer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: $border-color;
+      border-radius: 3px;
+    }
+  }
+}
+
+// ─── Empty State ────────────────────────────────────────
+.cart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: 40px 20px;
+  color: $text-muted;
+
+  .empty-icon {
+    margin-bottom: 16px;
+    opacity: 0.3;
+    color: $text-secondary;
+  }
+
+  p {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-secondary;
+    margin-bottom: 6px;
+  }
+
+  span {
+    font-size: 13px;
+    margin-bottom: 24px;
+    max-width: 280px;
+    line-height: 1.4;
+  }
+
+  .btn-browse {
+    padding: 10px 24px;
+    background: $accent;
+    border: none;
+    border-radius: $radius-pill;
+    color: #000;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background: $accent-hover;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// ─── Cart Items List ─────────────────────────────────────
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cart-item-card {
+  background: $bg-input;
+  border: 1px solid $border-color;
+  border-radius: $radius;
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: $text-muted;
+  }
+
+  .item-image-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: $radius;
+    background: $bg-card;
+    border: 1px solid $border-light;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-image-placeholder {
+      font-size: 20px;
+    }
+  }
+
+  .item-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .item-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+
+      h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      .btn-remove-item {
+        background: transparent;
+        border: none;
+        color: $text-muted;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: $radius;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: $transition;
+
+        &:hover {
+          color: #f87171;
+          background: rgba(248, 113, 113, 0.08);
+        }
+      }
+    }
+
+    .item-plan-info {
+      font-size: 11px;
+      color: $accent;
+      font-weight: 500;
+    }
+
+    .item-duration-dates {
+      font-size: 11px;
+      color: $text-secondary;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      margin-top: 2px;
+
+      .duration-label {
+        color: $text-muted;
+        font-weight: 500;
+      }
+    }
+
+    .item-deposit-info {
+      font-size: 11px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+
+    .item-action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      border-top: 1px solid $border-light;
+      padding-top: 8px;
+
+      .item-qty-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: $bg-card;
+        border: 1px solid $border-color;
+        border-radius: $radius-pill;
+        padding: 2px 6px;
+
+        button {
+          background: transparent;
+          border: none;
+          color: $text-secondary;
+          cursor: pointer;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: $transition;
+
+          &:hover:not(:disabled) {
+            background: $border-color;
+            color: $text-primary;
+          }
+
+          &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+          }
+        }
+
+        span {
+          font-size: 12px;
+          font-weight: 600;
+          color: $text-primary;
+          min-width: 14px;
+          text-align: center;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+
+      .item-subtotal {
+        font-size: 13px;
+        font-weight: 700;
+        color: $accent-green;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+  }
+}
+
+// ─── Footer Summary ──────────────────────────────────────
+.cart-drawer-footer {
+  border-top: 1px solid $border-color;
+  padding: 20px;
+  background: $bg-nav;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .summary-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: $text-secondary;
+
+      span {
+        font-variant-numeric: tabular-nums;
+      }
+
+      &.grand-total-row {
+        margin-top: 8px;
+        border-top: 1px solid $border-color;
+        padding-top: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: $text-primary;
+
+        .grand-total-val {
+          font-size: 16px;
+          font-weight: 700;
+          color: $accent-green;
+        }
+      }
+    }
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 12px;
+
+    .btn-clear-cart {
+      flex: 1;
+      padding: 10px 14px;
+      background: transparent;
+      border: 1px solid $border-color;
+      border-radius: $radius-pill;
+      color: $text-secondary;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: $transition;
+      font-family: inherit;
+
+      &:hover {
+        border-color: #f87171;
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.05);
+      }
+    }
+
+    .btn-checkout {
+      flex: 2;
+      padding: 10px 20px;
+      background: $accent-green;
+      border: none;
+      border-radius: $radius-pill;
+      color: #000;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: $transition;
+      font-family: inherit;
+
+      &:hover {
+        background: $accent-green-hover;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+      }
+    }
+  }
+}
+
+@keyframes cartFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cartSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

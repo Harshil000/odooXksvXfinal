@@ -1,6 +1,7 @@
 import { getPool } from "../config/database.js";
 import {
   INSERT_ATTRIBUTE_QUERY,
+  SELECT_ATTRIBUTE_BY_COMPANY_AND_NAME_QUERY,
   SELECT_ATTRIBUTES_BY_COMPANY_ID_QUERY,
   UPDATE_ATTRIBUTE_QUERY,
   DELETE_ATTRIBUTE_QUERY,
@@ -21,6 +22,8 @@ import {
 
 export async function createAttribute(c_id, name) {
   const pool = getPool();
+  const existing = await pool.query(SELECT_ATTRIBUTE_BY_COMPANY_AND_NAME_QUERY, [c_id, name.trim()]);
+  if (existing.rows[0]) return existing.rows[0];
   const result = await pool.query(INSERT_ATTRIBUTE_QUERY, [c_id, name.trim()]);
   return result.rows[0];
 }

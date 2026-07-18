@@ -5,7 +5,6 @@ dotenv.config();
 let pool = null;
 
 const connectDB = async () => {
-
   const connectionString = process.env.DATABASE_URL;
   const { Pool } = await import("pg");
   pool = new Pool({ connectionString });

@@ -51,14 +51,12 @@ export async function createUser({ first_name, last_name, profile_image, email, 
 }
 
 export async function findUserByEmail(email) {
-  
   const pool = getPool();
   const result = await pool.query(SELECT_USER_BY_EMAIL_QUERY, [email]);
   return result.rows[0] || null;
 }
 
 export async function findUserById(id) {
-  
   const pool = getPool();
   const result = await pool.query(SELECT_USER_BY_ID_QUERY, [id]);
   return result.rows[0] || null;
@@ -102,7 +100,6 @@ export async function createCompany(companyData) {
 }
 
 export async function findCompanyById(id) {
-  
   const pool = getPool();
   const result = await pool.query(SELECT_COMPANY_BY_ID_QUERY, [id]);
   return result.rows[0] || null;

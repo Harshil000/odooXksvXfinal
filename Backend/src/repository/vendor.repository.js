@@ -51,14 +51,12 @@ export async function createVendor({ first_name, last_name, profile_image, email
 }
 
 export async function findVendorByEmail(email) {
-  
   const pool = getPool();
   const result = await pool.query(SELECT_VENDOR_BY_EMAIL_QUERY, [email]);
   return result.rows[0] || null;
 }
 
 export async function findVendorById(id) {
-  
   const pool = getPool();
   const result = await pool.query(SELECT_VENDOR_BY_ID_QUERY, [id]);
   return result.rows[0] || null;

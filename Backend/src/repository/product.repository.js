@@ -8,6 +8,8 @@ import {
   INSERT_PRODUCT_IMAGE_QUERY,
   SELECT_IMAGES_BY_PRODUCT_ID_QUERY,
   DELETE_PRODUCT_IMAGE_QUERY,
+  INSERT_ASSET_QUERY,
+  SELECT_ASSETS_BY_PRODUCT_ID_QUERY,
 } from "../queries/product.query.js";
 
 // ==========================================
@@ -32,14 +34,12 @@ export async function createProduct(c_id, productData) {
 }
 
 export async function getAllProducts() {
-
   const pool = getPool();
   const result = await pool.query(SELECT_ALL_PRODUCTS_QUERY);
   return result.rows;
 }
 
 export async function getProductById(p_id) {
-
   const pool = getPool();
   const result = await pool.query(SELECT_PRODUCT_BY_ID_QUERY, [p_id]);
   return result.rows[0] || null;
@@ -63,7 +63,6 @@ export async function updateProduct(p_id, productData) {
 }
 
 export async function deleteProduct(p_id) {
-
   const pool = getPool();
   const result = await pool.query(DELETE_PRODUCT_QUERY, [p_id]);
   return result.rows[0] || null;
@@ -86,8 +85,23 @@ export async function getImagesByProductId(p_id) {
 }
 
 export async function deleteProductImage(img_id) {
-
   const pool = getPool();
   const result = await pool.query(DELETE_PRODUCT_IMAGE_QUERY, [img_id]);
   return result.rows[0] || null;
+}
+
+// ==========================================
+// ASSETS
+// ==========================================
+
+export async function createAsset(p_id, qr) {
+  const pool = getPool();
+  const result = await pool.query(INSERT_ASSET_QUERY, [p_id, qr]);
+  return result.rows[0];
+}
+
+export async function getAssetsByProductId(p_id) {
+  const pool = getPool();
+  const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
+  return result.rows;
 }

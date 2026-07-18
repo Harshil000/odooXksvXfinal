@@ -27,7 +27,6 @@ export async function createRentPlan(p_id, planData) {
 }
 
 export async function getRentPlansByProductId(p_id) {
-
   const pool = getPool();
   const result = await pool.query(SELECT_RENT_PLANS_BY_PRODUCT_ID_QUERY, [p_id]);
   return result.rows;
@@ -50,7 +49,6 @@ export async function updateRentPlan(r_id, planData) {
 }
 
 export async function deleteRentPlan(r_id) {
-
   const pool = getPool();
   const result = await pool.query(DELETE_RENT_PLAN_QUERY, [r_id]);
   return result.rows[0] || null;
