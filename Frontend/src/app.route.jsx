@@ -14,6 +14,7 @@ import Schedule from "./features/schedule/pages/Schedule";
 import Assets from "./features/assets/pages/Assets";
 import Invoices from "./features/invoices/pages/Invoices";
 import Reports from "./features/reports/pages/Reports";
+import Quotations from "./features/dashboard/pages/Quotations";
 import { ProtectedRoute, PublicRoute, StorefrontRoute } from "./shared/components/RouteGuards";
 
 const router = createBrowserRouter([
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard/new-order",
     element: <ProtectedRoute allowedRoles="vendor"><NewOrder /></ProtectedRoute>,
+  },
+  {
+    path: "/dashboard/quotation",
+    element: <ProtectedRoute allowedRoles="vendor"><Quotations /></ProtectedRoute>,
   },
   {
     path: "/schedule",

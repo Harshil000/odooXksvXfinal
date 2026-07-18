@@ -88,7 +88,7 @@ const Navbar = ({
         <a
           href="#"
           className={`nav-link ${activeSection === "quotation" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/dashboard/new-order"); }}
+          onClick={(e) => { e.preventDefault(); navigate("/dashboard/quotation"); }}
         >
           Quotation
         </a>
@@ -109,7 +109,15 @@ const Navbar = ({
         <a 
           href="#" 
           className={`nav-link ${activeSection === "products" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/"); }}
+          onClick={(e) => {
+            e.preventDefault();
+            const isVendor = !!(user?.role || user?.v_id || user?.c_id);
+            if (isVendor) {
+              navigate("/add-product");
+            } else {
+              navigate("/");
+            }
+          }}
         >
           Products
         </a>
