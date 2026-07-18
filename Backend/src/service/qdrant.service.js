@@ -1,7 +1,7 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
 const COLLECTION = process.env.QDRANT_COLLECTION || "odooXksv";
-const VECTOR_SIZE = 768; // Gemini text-embedding-004 output dimensions
+const VECTOR_SIZE = 3072; // Gemini gemini-embedding-2 output dimensions
 
 let client = null;
 
@@ -20,7 +20,8 @@ function getClient() {
 
 /**
  * Ensures the Qdrant collection exists with the correct vector configuration.
- * Creates it with Cosine distance and 768 dimensions if not found.
+ * Creates it with Cosine distance and 3072 dimensions if not found.
+ * Re-creates if dimension mismatch is detected (self-healing).
  * Called once on server startup.
  */
 export async function initQdrantCollection() {
@@ -29,7 +30,25 @@ export async function initQdrantCollection() {
     const { collections } = await qdrant.getCollections();
     const exists = collections.some((c) => c.name === COLLECTION);
 
-    if (!exists) {
+    if (exists) {
+      // Check collection details to ensure size matches
+      const info = await qdrant.getCollection(COLLECTION);
+      const currentSize = info.config?.vectors?.size;
+      
+      if (currentSize !== VECTOR_SIZE) {
+        console.log(`[Qdrant] Dimension mismatch (current: ${currentSize}d, target: ${VECTOR_SIZE}d). Re-creating collection...`);
+        await qdrant.deleteCollection(COLLECTION);
+        await qdrant.createCollection(COLLECTION, {
+          vectors: {
+            size: VECTOR_SIZE,
+            distance: "Cosine",
+          },
+        });
+        console.log(`[Qdrant] Collection "${COLLECTION}" re-created (${VECTOR_SIZE}d, Cosine).`);
+      } else {
+        console.log(`[Qdrant] Collection "${COLLECTION}" is ready.`);
+      }
+    } else {
       await qdrant.createCollection(COLLECTION, {
         vectors: {
           size: VECTOR_SIZE,
@@ -37,8 +56,6 @@ export async function initQdrantCollection() {
         },
       });
       console.log(`[Qdrant] Collection "${COLLECTION}" created (${VECTOR_SIZE}d, Cosine).`);
-    } else {
-      console.log(`[Qdrant] Collection "${COLLECTION}" is ready.`);
     }
   } catch (error) {
     console.error("[Qdrant] Failed to initialize collection:", error.message);

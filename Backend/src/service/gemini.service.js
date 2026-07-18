@@ -9,9 +9,18 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {{ pname: string, description?: string, product_type?: string }} productInfo
  * @returns {Promise<string|null>}
  */
-export async function generateProductDescription({ pname, description, product_type }) {
+export async function generateProductDescription({ pname, description, product_type, attributes }) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+
+    // Format attributes for prompt (e.g. [{"name": "Brand", "values": "Canon"}] -> "Brand: Canon")
+    let formattedAttributes = "None provided";
+    if (Array.isArray(attributes) && attributes.length > 0) {
+      formattedAttributes = attributes
+        .filter(attr => attr.name && attr.values)
+        .map(attr => `${attr.name}: ${attr.values}`)
+        .join("\n");
+    }
 
     const prompt = `Generate a rich, natural-language product description for a rental listing.
 Include the product name, type/category, key attributes, intended use cases, and common alternate 
@@ -19,6 +28,8 @@ names or search terms a buyer might use to find this item. Keep it under 150 wor
 
 Product Name: ${pname}
 Product Type: ${product_type || "General"}
+Product Attributes:
+${formattedAttributes}
 Vendor Description: ${description || "Not provided"}
 
 Write only the description text. No headers, labels, or markdown.`;
@@ -33,14 +44,14 @@ Write only the description text. No headers, labels, or markdown.`;
 
 /**
  * Generates a 768-dimensional embedding vector for the given text
- * using Gemini text-embedding-004.
+ * using Gemini gemini-embedding-2.
  *
  * @param {string} text - The text to embed
  * @returns {Promise<number[]|null>} Float array of 768 dimensions, or null on failure
  */
 export async function generateEmbedding(text) {
   try {
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-2" });
     const result = await model.embedContent(text);
     return result.embedding.values;
   } catch (error) {

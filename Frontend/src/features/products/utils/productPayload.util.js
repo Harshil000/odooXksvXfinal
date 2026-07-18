@@ -1,4 +1,4 @@
-export function buildProductPayload({ companyId, productData, salesData, imagePreviews }) {
+export function buildProductPayload({ companyId, productData, salesData, imagePreviews, attributes }) {
   const payload = {
     c_id: companyId,
     pname: productData.pname,
@@ -12,6 +12,10 @@ export function buildProductPayload({ companyId, productData, salesData, imagePr
 
   if (imagePreviews?.length) {
     payload.images = imagePreviews;
+  }
+
+  if (attributes?.length) {
+    payload.attributes = attributes;
   }
 
   return payload;

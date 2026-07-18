@@ -19,7 +19,7 @@ import { deleteProductVector } from "../service/qdrant.service.js";
 
 export async function createProductController(req, res, next) {
   try {
-    const { c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price, images } = req.body;
+    const { c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price, images, attributes } = req.body;
 
     if (!c_id) return res.status(400).json({ message: "Company ID (c_id) is required" });
     if (!pname || !pname.trim()) return res.status(400).json({ message: "Product name (pname) is required" });
@@ -40,7 +40,7 @@ export async function createProductController(req, res, next) {
 
     // Fire-and-forget: index the product in Qdrant asynchronously
     // Product creation is never blocked or failed by this step
-    indexProduct(product).catch((err) =>
+    indexProduct(product, attributes).catch((err) =>
       console.error("[Search] Background indexing failed for product", product.p_id, err.message)
     );
 

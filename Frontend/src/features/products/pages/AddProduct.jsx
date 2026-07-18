@@ -115,6 +115,7 @@ const AddProduct = () => {
         productData,
         salesData,
         imagePreviews,
+        attributes,
       });
 
       const product = await saveProduct(productPayload);

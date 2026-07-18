@@ -6,11 +6,19 @@ import { getPool } from "../config/database.js";
  * Builds the full text block used to generate an embedding.
  * Combines vendor-entered data with AI-generated description for richer vectors.
  *
- * @param {{ pname: string, description?: string, product_type?: string, aiDescription?: string }} fields
+ * @param {{ pname: string, description?: string, product_type?: string, aiDescription?: string, attributes?: Array }} fields
  * @returns {string}
  */
-function buildEmbeddingText({ pname, description, product_type, aiDescription }) {
-  return [pname, product_type, description, aiDescription]
+function buildEmbeddingText({ pname, description, product_type, aiDescription, attributes }) {
+  let formattedAttributes = "";
+  if (Array.isArray(attributes) && attributes.length > 0) {
+    formattedAttributes = attributes
+      .filter(attr => attr.name && attr.values)
+      .map(attr => `${attr.name}: ${attr.values}`)
+      .join(", ");
+  }
+
+  return [pname, product_type, formattedAttributes, description, aiDescription]
     .filter(Boolean)
     .join(". ");
 }
@@ -27,8 +35,9 @@ function buildEmbeddingText({ pname, description, product_type, aiDescription })
  * Each step has a fallback — product creation is NEVER blocked if this fails.
  *
  * @param {object} product - Full product row returned from PostgreSQL
+ * @param {Array} [attributes] - List of attributes (Brand, color, Size etc.)
  */
-export async function indexProduct(product) {
+export async function indexProduct(product, attributes = []) {
   try {
     const { p_id, pname, description, product_type, c_id, to_publish } = product;
 
@@ -37,6 +46,7 @@ export async function indexProduct(product) {
       pname,
       description,
       product_type,
+      attributes,
     });
 
     // Step 2: Build the text block for embedding
@@ -45,6 +55,7 @@ export async function indexProduct(product) {
       description,
       product_type,
       aiDescription,
+      attributes,
     });
 
     // Step 3: Generate embedding vector (graceful fallback to skip)
@@ -92,7 +103,9 @@ export async function searchProducts(query) {
       try {
         const queryVector = await generateEmbedding(query);
         if (!queryVector) return [];
-        return await searchSimilarProducts(queryVector, 20);
+        const hits = await searchSimilarProducts(queryVector, 20);
+        // Filter out irrelevant results with a similarity score below 0.58
+        return hits.filter(hit => hit.score >= 0.58);
       } catch (err) {
         console.warn("[Search] Vector search failed:", err.message);
         return [];
