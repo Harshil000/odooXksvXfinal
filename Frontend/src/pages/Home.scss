@@ -1,4 +1,4 @@
-@import "../features/auth/styles/login.scss";
+@use "../features/auth/styles/login.scss" as *;
 
 .home-container {
   display: flex;

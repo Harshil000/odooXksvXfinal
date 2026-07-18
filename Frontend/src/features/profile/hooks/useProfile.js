@@ -27,8 +27,11 @@ export function useProfile() {
         try {
             setIsSaving(true);
 
-            // 1. Save User Profile
-            const userRes = await profileApi.updateUserProfile(formData);
+            // 1. Save User Profile (if provided)
+            let userRes = null;
+            if (formData) {
+                userRes = await profileApi.updateUserProfile(formData);
+            }
 
             // 2. Save Company Profile (if applicable)
             let companyRes = null;
@@ -38,7 +41,7 @@ export function useProfile() {
 
             setProfileData((prev) => ({
                 ...prev,
-                user: userRes.user,
+                ...(userRes ? { user: userRes.user } : {}),
                 ...(companyRes ? { company: companyRes.company } : {})
             }));
 
