@@ -4,6 +4,7 @@ import { useProfile } from "../hooks/useProfile";
 import { ToastContainer } from "react-toastify";
 import { Link } from "react-router";
 import useAuth from "../../auth/hook/useAuth";
+import Navbar from "../../dashboard/components/Navbar";
 import "../styles/profile.scss";
 
 const Profile = () => {
@@ -187,6 +188,7 @@ const Profile = () => {
 
     return (
         <div className="profile-wrapper">
+            <Navbar activeSection="settings" />
             <ToastContainer position="top-right" autoClose={3000} theme="dark" />
 
             {/* Main Content Body */}

@@ -132,7 +132,7 @@ const ProductDetail = () => {
     }
   };
 
-  const allImages = images && images.length > 0 ? images : (image ? [image] : []);
+  const allImages = Array.from(new Set(images && images.length > 0 ? images : (image ? [image] : [])));
 
   return (
     <div className="product-detail-container dashboard-page">

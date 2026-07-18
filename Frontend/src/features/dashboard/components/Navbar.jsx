@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router";
 import { AuthContext } from "../../auth/auth.context";
 import { logout } from "../../auth/services/auth.api";
+import { getCompanyInfo } from "../../profile/services/profile.api";
 
 const Navbar = ({
   activeSection = "orders",
@@ -13,6 +14,23 @@ const Navbar = ({
   const { user, setUser } = useContext(AuthContext);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileRef = useRef(null);
+  const [companyInfo, setCompanyInfo] = useState({ cname: "Your Logo", comp_prof_image: null });
+
+  useEffect(() => {
+    async function loadCompany() {
+      try {
+        const info = await getCompanyInfo();
+        if (info) {
+          setCompanyInfo(info);
+        }
+      } catch (err) {
+        console.error("Failed to load company logo info:", err);
+      }
+    }
+    if (user) {
+      loadCompany();
+    }
+  }, [user]);
 
   // Derive display name from user/vendor context
   const displayName = user
@@ -44,14 +62,18 @@ const Navbar = ({
     <nav className="dashboard-nav" id="dashboard-navbar">
       {/* Logo */}
       <div className="nav-logo" onClick={() => navigate("/dashboard")}>
-        <div className="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <span>Your Logo</span>
+        {companyInfo.comp_prof_image ? (
+          <img src={companyInfo.comp_prof_image} alt={companyInfo.cname} style={{ width: "28px", height: "28px", borderRadius: "4px", objectFit: "cover", marginRight: "8px" }} />
+        ) : (
+          <div className="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        )}
+        <span>{companyInfo.cname || "Your Logo"}</span>
       </div>
 
       {/* Nav Links */}
@@ -91,7 +113,6 @@ const Navbar = ({
         >
           Products
         </a>
-        
         <a 
           href="#" 
           className={`nav-link ${activeSection === "settings" ? "active" : ""}`}
@@ -106,7 +127,6 @@ const Navbar = ({
         >
           Invoices
         </a>
-        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate("/"); }}>Products</a>
         <a
           href="#"
           className={`nav-link ${activeSection === "reports" ? "active" : ""}`}
@@ -114,7 +134,6 @@ const Navbar = ({
         >
           Reports
         </a>
-        <a href="#" className="nav-link">Settings</a>
       </div>
 
       {/* Search */}
@@ -153,7 +172,7 @@ const Navbar = ({
 
         {showProfileMenu && (
           <div className="profile-dropdown" id="profile-dropdown">
-            <button className="dropdown-item" onClick={() => setShowProfileMenu(false)}>
+            <button className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/profile"); }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />

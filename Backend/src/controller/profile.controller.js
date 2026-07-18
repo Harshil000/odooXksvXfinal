@@ -1,4 +1,5 @@
 import { findUserById, updateUserProfile, updateCompanyProfile, findCompanyById, updateUserPassword } from "../repository/user.repository.js";
+import { getPool } from "../config/database.js";
 import { findVendorById, updateVendorProfile, updateVendorPassword } from "../repository/vendor.repository.js";
 import { createAddress, findAddressesByUserId, updateAddress, deleteAddress } from "../repository/address.repository.js";
 import { processImageToBase64 } from "../utils/image.util.js";
@@ -200,6 +201,19 @@ export async function changePasswordController(req, res, next) {
       delete updatedUser.password;
       return res.status(200).json({ message: "Password updated successfully", user: updatedUser });
     }
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCompanyInfoController(req, res, next) {
+  try {
+    const pool = getPool();
+    const result = await pool.query("SELECT cname, comp_prof_image FROM company LIMIT 1");
+    if (result.rows.length === 0) {
+      return res.status(200).json({ cname: "Your Logo", comp_prof_image: null });
+    }
+    return res.status(200).json(result.rows[0]);
   } catch (error) {
     next(error);
   }

@@ -17,6 +17,7 @@ const AddProduct = () => {
 
   const [activeTab, setActiveTab] = useState('general');
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [newImages, setNewImages] = useState([]);
   const [companyAttributes, setCompanyAttributes] = useState([]);
   const [c_id, setCId] = useState(null);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
@@ -157,6 +158,7 @@ const AddProduct = () => {
         reader.readAsDataURL(file);
       }))).then((images) => {
         setImagePreviews((current) => [...current, ...images]);
+        setNewImages((current) => [...current, ...images]);
       });
     }
   };
@@ -186,7 +188,7 @@ const AddProduct = () => {
         });
 
         // Save new base64 images
-        for (const img of imagePreviews) {
+        for (const img of newImages) {
           if (img.startsWith('data:image/')) {
             await createProductImage(p_id, img);
           }
