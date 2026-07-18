@@ -34,7 +34,9 @@ async function readStoreFile(filePath) {
     if (error.code === "ENOENT") {
       return { 
         users: [], vendors: [], companies: [],
-        attributes: [], attribute_keys: [], attribute_values: []
+        attributes: [], attribute_keys: [], attribute_values: [],
+        addresses: [], products: [], product_images: [],
+        rent_plans: [], renting_orders: []
       };
     }
     throw error;
@@ -61,6 +63,11 @@ export async function initializeStore() {
     attributes: Array.isArray(data.attributes) ? data.attributes : [],
     attribute_keys: Array.isArray(data.attribute_keys) ? data.attribute_keys : [],
     attribute_values: Array.isArray(data.attribute_values) ? data.attribute_values : [],
+    addresses: Array.isArray(data.addresses) ? data.addresses : [],
+    products: Array.isArray(data.products) ? data.products : [],
+    product_images: Array.isArray(data.product_images) ? data.product_images : [],
+    rent_plans: Array.isArray(data.rent_plans) ? data.rent_plans : [],
+    renting_orders: Array.isArray(data.renting_orders) ? data.renting_orders : [],
   };
   initialized = true;
   activeDbPath = currentDbPath;

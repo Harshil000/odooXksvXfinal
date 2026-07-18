@@ -3,6 +3,7 @@ import { verifyAdmin } from "../middleware/auth.middleware.js";
 import {
   createAttributeController,
   getAttributesController,
+  createProductAttributeController,
   updateAttributeController,
   deleteAttributeController,
   createAttributeKeyController,
@@ -21,11 +22,14 @@ const attributeRoute = Router();
 // ATTRIBUTES
 // ==========================================
 
-// Get all attributes for a product (Public or regular users)
-attributeRoute.get("/product/:p_id", getAttributesController);
+// Get all attributes for a company
+attributeRoute.get("/company/:c_id", getAttributesController);
 
-// Create a new attribute for a product (Admin only)
-attributeRoute.post("/product/:p_id", verifyAdmin, createAttributeController);
+// Create a new attribute for a company (Admin only)
+attributeRoute.post("/company/:c_id", verifyAdmin, createAttributeController);
+
+// Link an attribute to a product
+attributeRoute.post("/product/:p_id", verifyAdmin, createProductAttributeController);
 
 // Update an attribute (Admin only)
 attributeRoute.put("/:attri_id", verifyAdmin, updateAttributeController);

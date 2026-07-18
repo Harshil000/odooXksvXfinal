@@ -4,7 +4,7 @@ import { resolveDatabaseMode } from "../database/dbMode.js";
 import { initializeStore, getStore, saveStore } from "../database/fileStore.js";
 import {
   INSERT_ATTRIBUTE_QUERY,
-  SELECT_ATTRIBUTES_BY_PRODUCT_ID_QUERY,
+  SELECT_ATTRIBUTES_BY_COMPANY_ID_QUERY,
   UPDATE_ATTRIBUTE_QUERY,
   DELETE_ATTRIBUTE_QUERY,
   INSERT_ATTRIBUTE_KEY_QUERY,
@@ -15,35 +15,36 @@ import {
   SELECT_ATTRIBUTE_VALUES_BY_KEY_ID_QUERY,
   UPDATE_ATTRIBUTE_VALUE_QUERY,
   DELETE_ATTRIBUTE_VALUE_QUERY,
+  INSERT_PRODUCT_ATTRIBUTE_QUERY,
 } from "../queries/attribute.query.js";
 
 // ==========================================
 // ATTRIBUTES
 // ==========================================
 
-export async function createAttribute(p_id, name) {
+export async function createAttribute(c_id, name) {
   const mode = resolveDatabaseMode();
   if (mode === "file") {
     await initializeStore();
     const store = getStore();
-    const newAttri = { attri_id: crypto.randomUUID(), p_id, name: name.trim() };
+    const newAttri = { attri_id: crypto.randomUUID(), c_id, name: name.trim() };
     store.attributes.push(newAttri);
     await saveStore();
     return newAttri;
   }
   const pool = getPool();
-  const result = await pool.query(INSERT_ATTRIBUTE_QUERY, [p_id, name.trim()]);
+  const result = await pool.query(INSERT_ATTRIBUTE_QUERY, [c_id, name.trim()]);
   return result.rows[0];
 }
 
-export async function getAttributesByProductId(p_id) {
+export async function getAttributesByCompanyId(c_id) {
   const mode = resolveDatabaseMode();
   if (mode === "file") {
     await initializeStore();
-    return getStore().attributes.filter(a => a.p_id === p_id);
+    return getStore().attributes.filter(a => a.c_id === c_id);
   }
   const pool = getPool();
-  const result = await pool.query(SELECT_ATTRIBUTES_BY_PRODUCT_ID_QUERY, [p_id]);
+  const result = await pool.query(SELECT_ATTRIBUTES_BY_COMPANY_ID_QUERY, [c_id]);
   return result.rows;
 }
 
@@ -77,6 +78,22 @@ export async function deleteAttribute(attri_id) {
   const pool = getPool();
   const result = await pool.query(DELETE_ATTRIBUTE_QUERY, [attri_id]);
   return result.rows[0] || null;
+}
+
+export async function createProductAttribute(p_id, attri_id) {
+  const mode = resolveDatabaseMode();
+  if (mode === "file") {
+    await initializeStore();
+    const store = getStore();
+    if (!store.product_attributes) store.product_attributes = [];
+    const newPa = { p_id, attri_id };
+    store.product_attributes.push(newPa);
+    await saveStore();
+    return newPa;
+  }
+  const pool = getPool();
+  const result = await pool.query(INSERT_PRODUCT_ATTRIBUTE_QUERY, [p_id, attri_id]);
+  return result.rows[0];
 }
 
 // ==========================================

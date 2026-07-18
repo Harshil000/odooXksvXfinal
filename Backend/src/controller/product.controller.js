@@ -1,0 +1,132 @@
+import {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+  createProductImage,
+  getImagesByProductId,
+  deleteProductImage,
+} from "../repository/product.repository.js";
+
+// ==========================================
+// PRODUCTS
+// ==========================================
+
+export async function createProductController(req, res, next) {
+  try {
+    const { c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price, images } = req.body;
+
+    if (!c_id) return res.status(400).json({ message: "Company ID (c_id) is required" });
+    if (!pname || !pname.trim()) return res.status(400).json({ message: "Product name (pname) is required" });
+
+    const productData = { pname, description, to_publish, quantity, product_type, sales_price, cost_price };
+    const product = await createProduct(c_id, productData);
+
+    // Handle optional base64 images in the same request for convenience
+    const createdImages = [];
+    if (images && Array.isArray(images)) {
+      for (const base64Str of images) {
+        if (typeof base64Str === "string") {
+          const img = await createProductImage(product.p_id, base64Str);
+          createdImages.push(img);
+        }
+      }
+    }
+
+    return res.status(201).json({ message: "Product created successfully", product, images: createdImages });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAllProductsController(req, res, next) {
+  try {
+    const products = await getAllProducts();
+    return res.status(200).json({ products });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getProductByIdController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    if (!p_id) return res.status(400).json({ message: "Product ID is required" });
+
+    const product = await getProductById(p_id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const images = await getImagesByProductId(p_id);
+
+    return res.status(200).json({ product, images });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateProductController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    const { pname, description, to_publish, quantity, product_type, sales_price, cost_price } = req.body;
+
+    if (!p_id) return res.status(400).json({ message: "Product ID is required" });
+    if (!pname || !pname.trim()) return res.status(400).json({ message: "Product name is required" });
+
+    const productData = { pname, description, to_publish, quantity, product_type, sales_price, cost_price };
+    const product = await updateProduct(p_id, productData);
+
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    return res.status(200).json({ message: "Product updated successfully", product });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteProductController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    if (!p_id) return res.status(400).json({ message: "Product ID is required" });
+
+    const deleted = await deleteProduct(p_id);
+    if (!deleted) return res.status(404).json({ message: "Product not found" });
+
+    return res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ==========================================
+// PRODUCT IMAGES
+// ==========================================
+
+export async function createProductImageController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    const { image_base64 } = req.body;
+
+    if (!p_id) return res.status(400).json({ message: "Product ID is required" });
+    if (!image_base64) return res.status(400).json({ message: "Image base64 string is required" });
+
+    const image = await createProductImage(p_id, image_base64);
+    return res.status(201).json({ message: "Product image uploaded successfully", image });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteProductImageController(req, res, next) {
+  try {
+    const { img_id } = req.params;
+    if (!img_id) return res.status(400).json({ message: "Image ID is required" });
+
+    const deleted = await deleteProductImage(img_id);
+    if (!deleted) return res.status(404).json({ message: "Image not found" });
+
+    return res.status(200).json({ message: "Image deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
