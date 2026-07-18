@@ -90,7 +90,8 @@ export async function createUserRecord({ first_name, last_name, profile_image, e
   await initializeStore();
   const normalizedEmail = normalizeEmail(email);
   const existingUser = store.users.find(u => u.email === normalizedEmail);
-  if (existingUser) {
+  const existingVendor = store.vendors.find(v => v.email === normalizedEmail);
+  if (existingUser || existingVendor) {
     const error = new Error("Email already exists");
     error.status = 409;
     throw error;
@@ -154,8 +155,9 @@ export async function findCompanyById(c_id) {
 export async function createVendorRecord({ first_name, last_name, profile_image, email, password_hash, c_id, role }) {
   await initializeStore();
   const normalizedEmail = normalizeEmail(email);
+  const existingUser = store.users.find(u => u.email === normalizedEmail);
   const existingVendor = store.vendors.find(v => v.email === normalizedEmail);
-  if (existingVendor) {
+  if (existingUser || existingVendor) {
     const error = new Error("Email already exists");
     error.status = 409;
     throw error;

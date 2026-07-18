@@ -40,6 +40,19 @@ export async function createVendor({ first_name, last_name, profile_image, email
 
   const pool = getPool();
   try {
+    const checkQuery = `
+      SELECT email FROM users WHERE LOWER(email) = LOWER($1)
+      UNION ALL
+      SELECT email FROM vendors WHERE LOWER(email) = LOWER($1)
+      LIMIT 1;
+    `;
+    const checkResult = await pool.query(checkQuery, [email.trim()]);
+    if (checkResult.rows.length > 0) {
+      const err = new Error("Email already exists");
+      err.status = 409;
+      throw err;
+    }
+
     const result = await pool.query(INSERT_VENDOR_QUERY, [
       String(first_name || "").trim(),
       String(last_name || "").trim(),
