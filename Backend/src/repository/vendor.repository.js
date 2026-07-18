@@ -5,6 +5,7 @@ import {
   SELECT_VENDOR_BY_EMAIL_QUERY,
   SELECT_VENDOR_BY_ID_QUERY,
   UPDATE_VENDOR_PROFILE_QUERY,
+  SELECT_COMPANIES_BY_NAME_QUERY,
 } from "../queries/user.query.js";
 
 // ========================
@@ -80,4 +81,10 @@ export async function updateVendorPassword(v_id, newPassword) {
   `;
   const result = await pool.query(query, [passwordHash, v_id]);
   return result.rows[0];
+}
+
+export async function searchCompaniesByName(nameQuery) {
+  const pool = getPool();
+  const result = await pool.query(SELECT_COMPANIES_BY_NAME_QUERY, [`%${nameQuery}%`]);
+  return result.rows;
 }

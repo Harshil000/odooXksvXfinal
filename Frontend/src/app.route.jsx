@@ -14,6 +14,8 @@ import Schedule from "./features/schedule/pages/Schedule";
 import Assets from "./features/assets/pages/Assets";
 import Invoices from "./features/invoices/pages/Invoices";
 import Reports from "./features/reports/pages/Reports";
+import Quotations from "./features/dashboard/pages/Quotations";
+import { ProtectedRoute, PublicRoute, StorefrontRoute } from "./shared/components/RouteGuards";
 
 const router = createBrowserRouter([
   {
@@ -21,69 +23,73 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Home />,
+        element: <StorefrontRoute><Home /></StorefrontRoute>,
       },
       {
         path: "add-product",
-        element: <AddProduct />,
+        element: <ProtectedRoute allowedRoles="vendor"><AddProduct /></ProtectedRoute>,
       },
       {
         path: "edit-product/:p_id",
-        element: <AddProduct />,
+        element: <ProtectedRoute allowedRoles="vendor"><AddProduct /></ProtectedRoute>,
       },
       {
         path: "product/:p_id",
-        element: <ProductDetail />,
+        element: <StorefrontRoute><ProductDetail /></StorefrontRoute>,
       },
     ]
   },
   {
     path: "/dashboard",
-    element: <Dashboard />,
+    element: <ProtectedRoute allowedRoles="vendor"><Dashboard /></ProtectedRoute>,
   },
   {
     path: "/dashboard/new-order",
-    element: <NewOrder />,
+    element: <ProtectedRoute allowedRoles="vendor"><NewOrder /></ProtectedRoute>,
+  },
+  {
+    path: "/dashboard/quotation",
+    element: <ProtectedRoute allowedRoles="vendor"><Quotations /></ProtectedRoute>,
   },
   {
     path: "/schedule",
-    element: <Schedule />,
+    element: <ProtectedRoute allowedRoles="vendor"><Schedule /></ProtectedRoute>,
   },
   {
     path: "/assets",
-    element: <Assets />,
+    element: <ProtectedRoute allowedRoles="vendor"><Assets /></ProtectedRoute>,
   },
   {
     path: "/invoices",
-    element: <Invoices />,
+    element: <ProtectedRoute allowedRoles="vendor"><Invoices /></ProtectedRoute>,
   },
   {
     path: "/reports",
-    element: <Reports />,
+    element: <ProtectedRoute allowedRoles="vendor"><Reports /></ProtectedRoute>,
   },
   {
     path: "/login",
-    element: <Login />,
+    element: <PublicRoute><Login /></PublicRoute>,
   },
   {
     path: "/forgot-password",
-    element: <ForgotPassword />,
+    element: <PublicRoute><ForgotPassword /></PublicRoute>,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: <PublicRoute><Register /></PublicRoute>,
   },
   {
     path: "/vendor-register",
-    element: <VendorRegister />,
+    element: <PublicRoute><VendorRegister /></PublicRoute>,
   },
   {
     path: "/profile",
-    element: <Profile/>
+    element: <ProtectedRoute allowedRoles="user"><Profile /></ProtectedRoute>
   },
   {
     path: "/change-password",
-    element: <ChangePassword />
+    element: <ProtectedRoute allowedRoles="user"><ChangePassword /></ProtectedRoute>
   }
 ]);
 

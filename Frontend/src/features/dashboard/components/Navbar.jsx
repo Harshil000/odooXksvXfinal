@@ -82,7 +82,7 @@ const Navbar = ({
         <a
           href="#"
           className={`nav-link ${activeSection === "quotation" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/dashboard/new-order"); }}
+          onClick={(e) => { e.preventDefault(); navigate("/dashboard/quotation"); }}
         >
           Quotation
         </a>

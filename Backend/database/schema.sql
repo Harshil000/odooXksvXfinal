@@ -349,14 +349,32 @@ CREATE INDEX IF NOT EXISTS attribute_values_name_idx ON attribute_values (value_
 
 CREATE TABLE IF NOT EXISTS quotations (
   q_id BIGSERIAL PRIMARY KEY,
+  c_id UUID NOT NULL,
+  p_id UUID NOT NULL,
   r_id UUID NOT NULL,
-  CONSTRAINT quotations_r_id_fk
-    FOREIGN KEY (r_id)
-    REFERENCES rent_plans(r_id)
-    ON DELETE CASCADE
+  u_id UUID,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_email VARCHAR(255) NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  start_date TIMESTAMP NOT NULL,
+  end_date TIMESTAMP NOT NULL,
+  total NUMERIC NOT NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'sent',
+  rent_id BIGINT,
+  sent_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  confirmed_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT quotations_c_id_fk FOREIGN KEY (c_id) REFERENCES companies(c_id) ON DELETE CASCADE,
+  CONSTRAINT quotations_p_id_fk FOREIGN KEY (p_id) REFERENCES products(p_id) ON DELETE CASCADE,
+  CONSTRAINT quotations_r_id_fk FOREIGN KEY (r_id) REFERENCES rent_plans(r_id) ON DELETE CASCADE,
+  CONSTRAINT quotations_u_id_fk FOREIGN KEY (u_id) REFERENCES users(u_id) ON DELETE SET NULL,
+  CONSTRAINT quotations_rent_id_fk FOREIGN KEY (rent_id) REFERENCES renting_orders(rent_id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS quotations_r_id_idx ON quotations (r_id);
+CREATE INDEX IF NOT EXISTS quotations_c_id_idx ON quotations (c_id);
+CREATE INDEX IF NOT EXISTS quotations_p_id_idx ON quotations (p_id);
+
 
 -- =========================================================
 -- CART ITEMS

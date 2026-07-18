@@ -73,3 +73,12 @@ export async function resetPassword(data) {
     throw getErrorPayload(error, "Password reset failed");
   }
 }
+
+export async function searchCompanies(query) {
+  try {
+    const response = await httpClient.get(`${AUTH_BASE}/companies/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Company search failed");
+  }
+}

@@ -1,13 +1,15 @@
+import { useState, useEffect } from "react"
 import { useForm } from "../hook/useForm"
 import { Link } from "react-router"
 import { ToastContainer } from 'react-toastify';
 import useAuth from "../hook/useAuth"
+import { searchCompanies } from "../services/auth.api"
 import PasswordField from "../components/PasswordField"
 import { Mail, Briefcase, Hash, Wrench, ArrowRight, UserCog } from "lucide-react"
 import "../styles/login.scss"
 
 const VendorRegister = () => {
-    const { formValues, handleChange } = useForm({
+    const { formValues, handleChange, setFormValues } = useForm({
         firstName: "",
         lastName: "",
         role: "ADMIN",
@@ -24,7 +26,41 @@ const VendorRegister = () => {
         password: ""
     });
 
-    const { VendorRegisterUser } = useAuth(); // We'll assume it exists or will be added
+    const { VendorRegisterUser } = useAuth();
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [suggestions, setSuggestions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+
+    useEffect(() => {
+        if (formValues.role !== "STAFF") {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
+
+        if (!searchTerm.trim()) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
+
+        setIsSearching(true);
+        const delayDebounce = setTimeout(async () => {
+            try {
+                const response = await searchCompanies(searchTerm);
+                setSuggestions(response.companies || []);
+                setShowDropdown(true);
+            } catch (err) {
+                console.warn("Failed to fetch companies:", err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 400);
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchTerm, formValues.role]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -48,6 +84,10 @@ const VendorRegister = () => {
             payload.addressLine1 = formValues.addressLine1;
             payload.addressLine2 = formValues.addressLine2;
         } else if (formValues.role === "STAFF") {
+            if (!formValues.companyUuid) {
+                alert("Please search and select a matching company from the dropdown suggestions.");
+                return;
+            }
             payload.companyUuid = formValues.companyUuid;
         }
 
@@ -165,12 +205,50 @@ const VendorRegister = () => {
                     )}
 
                     {formValues.role === "STAFF" && (
-                        <div className="form-group">
-                            <div className="label-row"><label>Company ID (UUID)</label></div>
+                        <div className="form-group" style={{ position: 'relative' }}>
+                            <div className="label-row"><label>Search Company Name</label></div>
                             <div className="input-wrapper">
                                 <div className="input-icon"><Briefcase size={16} /></div>
-                                <input required onChange={handleChange} type="text" name="companyUuid" placeholder="Enter Company UUID" />
+                                <input 
+                                    required 
+                                    type="text" 
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setFormValues(prev => ({ ...prev, companyUuid: "" }));
+                                    }} 
+                                    placeholder="Start typing company name..." 
+                                />
+                                
+                                {showDropdown && suggestions.length > 0 && (
+                                    <ul className="company-suggestions-dropdown">
+                                        {suggestions.map((company) => (
+                                            <li 
+                                                key={company.c_id}
+                                                onClick={() => {
+                                                    setSearchTerm(company.cname);
+                                                    setFormValues(prev => ({ ...prev, companyUuid: company.c_id }));
+                                                    setShowDropdown(false);
+                                                }}
+                                            >
+                                                <span className="comp-name">{company.cname}</span>
+                                                <span className="comp-gst">GST: {company.gst_no || "N/A"}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                {showDropdown && searchTerm.trim() && suggestions.length === 0 && !isSearching && (
+                                    <div className="company-suggestions-empty">
+                                        No matching companies found
+                                    </div>
+                                )}
                             </div>
+                            {formValues.companyUuid && (
+                                <div className="selected-company-indicator">
+                                    Selected Company ID: <code>{formValues.companyUuid}</code>
+                                </div>
+                            )}
                         </div>
                     )}
 
