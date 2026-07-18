@@ -103,7 +103,14 @@ const Navbar = ({
         <div 
           className={`nav-link nav-link-container ${activeSection === "products" ? "active" : ""}`} 
           style={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: "4px", cursor: "pointer" }}
-          onClick={() => navigate("/")}
+          onClick={() => {
+            const isVendor = !!(user?.role || user?.v_id || user?.c_id);
+            if (isVendor) {
+              navigate("/add-product");
+            } else {
+              navigate("/");
+            }
+          }}
         >
           <a 
             href="#" 
@@ -271,7 +278,15 @@ const Navbar = ({
                 <div 
                   className={`drawer-nav-link ${activeSection === "products" ? "active" : ""}`}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: "4px", cursor: "pointer" }}
-                  onClick={() => { setShowSidebar(false); navigate("/"); }}
+                  onClick={() => { 
+                    setShowSidebar(false);
+                    const isVendor = !!(user?.role || user?.v_id || user?.c_id);
+                    if (isVendor) {
+                      navigate("/add-product");
+                    } else {
+                      navigate("/");
+                    }
+                  }}
                 >
                   <span style={{ flex: 1 }}>Products</span>
                   <button 
