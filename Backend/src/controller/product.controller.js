@@ -7,6 +7,8 @@ import {
   createProductImage,
   getImagesByProductId,
   deleteProductImage,
+  createAsset,
+  getAssetsByProductId,
 } from "../repository/product.repository.js";
 
 // ==========================================
@@ -126,6 +128,37 @@ export async function deleteProductImageController(req, res, next) {
     if (!deleted) return res.status(404).json({ message: "Image not found" });
 
     return res.status(200).json({ message: "Image deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ==========================================
+// ASSETS
+// ==========================================
+
+export async function createAssetController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    const { qr } = req.body;
+
+    if (!p_id) return res.status(400).json({ message: "Product ID (p_id) is required" });
+    if (!qr) return res.status(400).json({ message: "QR string is required" });
+
+    const asset = await createAsset(p_id, qr);
+    return res.status(201).json({ message: "Asset created successfully", asset });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAssetsByProductIdController(req, res, next) {
+  try {
+    const { p_id } = req.params;
+    if (!p_id) return res.status(400).json({ message: "Product ID (p_id) is required" });
+
+    const assets = await getAssetsByProductId(p_id);
+    return res.status(200).json({ assets });
   } catch (error) {
     next(error);
   }

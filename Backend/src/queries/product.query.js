@@ -54,3 +54,19 @@ DELETE FROM product_images
 WHERE img_id = $1
 RETURNING img_id;
 `;
+
+// ==========================================
+// ASSETS QUERIES
+// ==========================================
+
+export const INSERT_ASSET_QUERY = `
+INSERT INTO assets (p_id, qr)
+VALUES ($1, $2)
+RETURNING asset_id, p_id, qr;
+`;
+
+export const SELECT_ASSETS_BY_PRODUCT_ID_QUERY = `
+SELECT asset_id, p_id, qr
+FROM assets
+WHERE p_id = $1;
+`;

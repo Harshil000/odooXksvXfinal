@@ -7,6 +7,7 @@ import attributeRoute from "./routes/attribute.route.js";
 import productRoute from "./routes/product.route.js";
 import rentPlanRoute from "./routes/rent_plan.route.js";
 import orderRoute from "./routes/order.route.js";
+import cartRoute from "./routes/cart.route.js";
 import morgan from "morgan";
 
 const app = express();
@@ -51,6 +52,7 @@ app.use("/api/attributes", attributeRoute);
 app.use("/api/products", productRoute);
 app.use("/api/rent-plans", rentPlanRoute);
 app.use("/api/orders", orderRoute);
+app.use("/api/cart", cartRoute);
 app.use(handleError);
 
 export default app;

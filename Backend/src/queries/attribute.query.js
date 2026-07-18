@@ -14,6 +14,13 @@ FROM attributes
 WHERE c_id = $1;
 `;
 
+export const SELECT_ATTRIBUTE_BY_COMPANY_AND_NAME_QUERY = `
+SELECT attri_id, c_id, name
+FROM attributes
+WHERE c_id = $1 AND LOWER(name) = LOWER($2)
+LIMIT 1;
+`;
+
 export const UPDATE_ATTRIBUTE_QUERY = `
 UPDATE attributes
 SET name = $1
@@ -30,6 +37,7 @@ RETURNING attri_id;
 export const INSERT_PRODUCT_ATTRIBUTE_QUERY = `
 INSERT INTO product_attributes (p_id, attri_id)
 VALUES ($1, $2)
+ON CONFLICT (p_id, attri_id) DO NOTHING
 RETURNING p_id, attri_id;
 `;
 

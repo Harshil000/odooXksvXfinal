@@ -11,6 +11,8 @@ import {
   INSERT_PRODUCT_IMAGE_QUERY,
   SELECT_IMAGES_BY_PRODUCT_ID_QUERY,
   DELETE_PRODUCT_IMAGE_QUERY,
+  INSERT_ASSET_QUERY,
+  SELECT_ASSETS_BY_PRODUCT_ID_QUERY,
 } from "../queries/product.query.js";
 
 // ==========================================
@@ -198,4 +200,43 @@ export async function deleteProductImage(img_id) {
   const pool = getPool();
   const result = await pool.query(DELETE_PRODUCT_IMAGE_QUERY, [img_id]);
   return result.rows[0] || null;
+}
+
+// ==========================================
+// ASSETS
+// ==========================================
+
+export async function createAsset(p_id, qr) {
+  const mode = resolveDatabaseMode();
+
+  if (mode === "file") {
+    await initializeStore();
+    const store = getStore();
+    const newAsset = {
+      asset_id: crypto.randomUUID(),
+      p_id,
+      qr,
+    };
+    store.assets.push(newAsset);
+    await saveStore();
+    return newAsset;
+  }
+
+  const pool = getPool();
+  const result = await pool.query(INSERT_ASSET_QUERY, [p_id, qr]);
+  return result.rows[0];
+}
+
+export async function getAssetsByProductId(p_id) {
+  const mode = resolveDatabaseMode();
+
+  if (mode === "file") {
+    await initializeStore();
+    const store = getStore();
+    return store.assets.filter(a => a.p_id === p_id);
+  }
+
+  const pool = getPool();
+  const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
+  return result.rows;
 }

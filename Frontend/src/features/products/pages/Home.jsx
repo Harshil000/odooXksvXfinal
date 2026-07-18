@@ -1,42 +1,18 @@
-import  { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import './Home.scss';
+import { useProducts } from '../hooks/useProducts';
+import { useCart } from '../../cart/hooks/useCart';
+import CartDrawer from '../../cart/components/CartDrawer';
+import '../styles/Home.scss';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
+  const { products } = useProducts();
+  const { totals } = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
   
   // Checking user role from local storage or context would happen here
   const isAdmin = true; // Hardcoded to true for demo purposes to show the add button
-
-  useEffect(() => {
-    // Fetch products from backend
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/products', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          // Transform backend product keys to match frontend mapping
-          const formatted = data.products.map(p => ({
-            id: p.p_id,
-            image: p.image || 'https://via.placeholder.com/300x200?text=No+Image', 
-            price: `Rs ${p.sales_price || p.price || 0}`,
-            duration: 'Month', 
-            colors: [], 
-            outOfStock: p.quantity <= 0,
-            pname: p.pname
-          }));
-          setProducts(formatted);
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-    fetchProducts();
-  }, []);
-  
 
   return (
     <div className="home-container">
@@ -74,13 +50,13 @@ const Home = () => {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
           </button>
-          <button className="icon-btn">
+          <button className="icon-btn" onClick={() => setCartOpen(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1"></circle>
               <circle cx="20" cy="21" r="1"></circle>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
             </svg>
-            <span className="badge">0</span>
+            <span className="badge">{totals.totalItemsCount}</span>
           </button>
           <div className="profile-avatar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -177,6 +153,7 @@ const Home = () => {
           </div>
         </main>
       </div>
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 };

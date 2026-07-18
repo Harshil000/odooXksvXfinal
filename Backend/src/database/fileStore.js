@@ -36,7 +36,8 @@ async function readStoreFile(filePath) {
         users: [], vendors: [], companies: [],
         attributes: [], attribute_keys: [], attribute_values: [],
         addresses: [], products: [], product_images: [],
-        rent_plans: [], renting_orders: []
+        rent_plans: [], renting_orders: [], assets: [],
+        cart_items: []
       };
     }
     throw error;
@@ -68,6 +69,8 @@ export async function initializeStore() {
     product_images: Array.isArray(data.product_images) ? data.product_images : [],
     rent_plans: Array.isArray(data.rent_plans) ? data.rent_plans : [],
     renting_orders: Array.isArray(data.renting_orders) ? data.renting_orders : [],
+    assets: Array.isArray(data.assets) ? data.assets : [],
+    cart_items: Array.isArray(data.cart_items) ? data.cart_items : [],
   };
   initialized = true;
   activeDbPath = currentDbPath;

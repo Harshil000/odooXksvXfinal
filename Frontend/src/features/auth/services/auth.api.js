@@ -1,68 +1,57 @@
-import axios from "axios";
+import httpClient, { getErrorPayload } from "../../../shared/api/httpClient";
 
-const api = axios.create({
-    baseURL : "http://localhost:3000/api/auth",
-    withCredentials: true,
-})
+const AUTH_BASE = "/auth";
 
-export async function register(data){
-    // data contains: firstName, lastName, email, password
-    try {
-        const response = await api.post("/register", data);
-        console.log("✅ Registration Response:", response);
-        return response.data;
-    } catch (error) {
-        console.log(error);
-        throw error.response.data;
-    }
+export async function register(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/register`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Registration failed");
+  }
 }
 
-export async function adminRegister(data){
-    try {
-        const response = await api.post("/admin/register", data);
-        console.log("✅ Admin Registration Response:", response);
-        return response.data;
-    } catch (error) {
-        console.log(error);
-        throw error.response.data;
-    }
+export async function adminRegister(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/admin/register`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Admin registration failed");
+  }
 }
 
-export async function staffRegister(data){
-    try {
-        const response = await api.post("/staff/register", data);
-        console.log("✅ Staff Registration Response:", response);
-        return response.data;
-    } catch (error) {
-        console.log(error);
-        throw error.response.data;
-    }
+export async function staffRegister(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/staff/register`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Staff registration failed");
+  }
 }
 
-export async function login(data){
-    try {
-        const response = await api.post("/login", data);
-        return response.data;
-    } catch (error) {
-        console.log(error);
-        throw error.response.data;
-    }
+export async function login(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/login`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Login failed");
+  }
 }
 
 export async function getCurrentUser() {
-    try {
-        const response = await api.get("/me");
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || { message: "Unable to load session" };
-    }
+  try {
+    const response = await httpClient.get(`${AUTH_BASE}/me`);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Unable to load session");
+  }
 }
 
 export async function logout() {
-    try {
-        const response = await api.get("/logout");
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || { message: "Logout failed" };
-    }
+  try {
+    const response = await httpClient.get(`${AUTH_BASE}/logout`);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Logout failed");
+  }
 }

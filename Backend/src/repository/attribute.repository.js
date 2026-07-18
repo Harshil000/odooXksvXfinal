@@ -4,6 +4,7 @@ import { resolveDatabaseMode } from "../database/dbMode.js";
 import { initializeStore, getStore, saveStore } from "../database/fileStore.js";
 import {
   INSERT_ATTRIBUTE_QUERY,
+  SELECT_ATTRIBUTE_BY_COMPANY_AND_NAME_QUERY,
   SELECT_ATTRIBUTES_BY_COMPANY_ID_QUERY,
   UPDATE_ATTRIBUTE_QUERY,
   DELETE_ATTRIBUTE_QUERY,
@@ -27,12 +28,18 @@ export async function createAttribute(c_id, name) {
   if (mode === "file") {
     await initializeStore();
     const store = getStore();
+    const existing = store.attributes.find(
+      (attribute) => attribute.c_id === c_id && attribute.name.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (existing) return existing;
     const newAttri = { attri_id: crypto.randomUUID(), c_id, name: name.trim() };
     store.attributes.push(newAttri);
     await saveStore();
     return newAttri;
   }
   const pool = getPool();
+  const existing = await pool.query(SELECT_ATTRIBUTE_BY_COMPANY_AND_NAME_QUERY, [c_id, name.trim()]);
+  if (existing.rows[0]) return existing.rows[0];
   const result = await pool.query(INSERT_ATTRIBUTE_QUERY, [c_id, name.trim()]);
   return result.rows[0];
 }
@@ -86,6 +93,8 @@ export async function createProductAttribute(p_id, attri_id) {
     await initializeStore();
     const store = getStore();
     if (!store.product_attributes) store.product_attributes = [];
+    const existing = store.product_attributes.find((item) => item.p_id === p_id && item.attri_id === attri_id);
+    if (existing) return existing;
     const newPa = { p_id, attri_id };
     store.product_attributes.push(newPa);
     await saveStore();

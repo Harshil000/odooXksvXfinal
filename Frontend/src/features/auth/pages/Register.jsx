@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router"
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import PasswordField from "../components/PasswordField"
-import { Mail, Wrench, ArrowRight } from "lucide-react"
+import { Mail, ArrowRight } from "lucide-react"
 import "../styles/login.scss"
 
 const Register = () => {

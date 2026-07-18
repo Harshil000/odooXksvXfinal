@@ -1,7 +1,6 @@
-import { createContext , useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { AuthContext } from "./auth.context";
 import { getCurrentUser } from "./services/auth.api";
-
-export const AuthContext = createContext();
 
 const AuthContextProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -15,7 +14,8 @@ const AuthContextProvider = ({ children }) => {
             try {
                 const response = await getCurrentUser();
                 if (active) {
-                    setUser(response.user);
+                    // Handle both user and vendor responses from /me endpoint
+                    setUser(response.user || response.vendor);
                 }
             } catch {
                 if (active) {
