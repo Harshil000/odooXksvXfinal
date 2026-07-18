@@ -74,8 +74,8 @@ const ProductDetail = () => {
 
   const selectedPlan = rentPlans.find(p => p.r_id === selectedPlanId);
   const priceLabel = selectedPlan 
-    ? `(Rs ${selectedPlan.price} / per ${selectedPlan.duration_type})` 
-    : `(Rs ${product.sales_price || product.cost_price || 0} / per ${product.duration || 'month'})`;
+    ? `(₹${selectedPlan.price} / per ${selectedPlan.duration_type})` 
+    : `(₹${product.sales_price || product.cost_price || 0} / per ${product.duration || 'month'})`;
 
   // Parse and group all attributes across all variants of this product name
   const groupedAttributes = {};
@@ -316,8 +316,8 @@ const ProductDetail = () => {
                           />
                         </td>
                         <td style={{ textTransform: 'capitalize' }}>{plan.duration_type}</td>
-                        <td>Rs {plan.price}</td>
-                        <td>Rs {plan.deposit}</td>
+                        <td>₹{plan.price}</td>
+                        <td>₹{plan.deposit}</td>
                       </tr>
                     ))}
                   </tbody>

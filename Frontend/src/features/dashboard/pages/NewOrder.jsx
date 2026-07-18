@@ -573,10 +573,10 @@ const NewOrder = () => {
                                   onChange={() => setSelectedPlanId(rp.r_id)}
                                 />
                               </td>
-                              <td>${Number(rp.price)}</td>
+                              <td>₹{Number(rp.price)}</td>
                               <td>{rp.duration_type}</td>
-                              <td>${Number(rp.deposit)}</td>
-                              <td>${Number(rp.penalty)}</td>
+                              <td>₹{Number(rp.deposit)}</td>
+                              <td>₹{Number(rp.penalty)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -624,11 +624,11 @@ const NewOrder = () => {
                       </td>
                       <td>Units</td>
                       <td>
-                        {selectedPlan ? `$${Number(selectedPlan.price)}` : "No plan selected"}
+                        {selectedPlan ? `₹${Number(selectedPlan.price)}` : "No plan selected"}
                       </td>
                       <td>10%</td>
                       <td>
-                        ${untaxedAmount.toFixed(2)}
+                        ₹{untaxedAmount.toFixed(2)}
                       </td>
                     </tr>
                   ) : null}
@@ -678,15 +678,15 @@ const NewOrder = () => {
                 <div className="order-totals-breakdown">
                   <div className="total-row">
                     <span>Untaxed Amount:</span>
-                    <strong>${untaxedAmount.toFixed(2)}</strong>
+                    <strong>₹{untaxedAmount.toFixed(2)}</strong>
                   </div>
                   <div className="total-row">
                     <span>Taxes (10%):</span>
-                    <strong>${taxAmount.toFixed(2)}</strong>
+                    <strong>₹{taxAmount.toFixed(2)}</strong>
                   </div>
                   <div className="total-row grand-total">
                     <span>Total:</span>
-                    <strong>${totalAmount.toFixed(2)}</strong>
+                    <strong>₹{totalAmount.toFixed(2)}</strong>
                   </div>
                 </div>
               )}
