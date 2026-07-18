@@ -14,6 +14,11 @@ const VendorRegister = () => {
         companyName: "",
         productCategory: "",
         gstNo: "",
+        pincode: "",
+        city: "",
+        state: "",
+        addressLine1: "",
+        addressLine2: "",
         companyUuid: "",
         email: "",
         password: ""
@@ -37,6 +42,11 @@ const VendorRegister = () => {
             payload.companyName = formValues.companyName;
             payload.productCategory = formValues.productCategory;
             payload.gstNo = formValues.gstNo;
+            payload.pincode = formValues.pincode;
+            payload.city = formValues.city;
+            payload.state = formValues.state;
+            payload.addressLine1 = formValues.addressLine1;
+            payload.addressLine2 = formValues.addressLine2;
         } else if (formValues.role === "STAFF") {
             payload.companyUuid = formValues.companyUuid;
         }
@@ -114,6 +124,41 @@ const VendorRegister = () => {
                                 <div className="input-wrapper">
                                     <div className="input-icon"><Hash size={16} /></div>
                                     <input required onChange={handleChange} type="text" name="gstNo" placeholder="GSTIN..." />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <div className="label-row"><label>Pincode</label></div>
+                                    <div className="input-wrapper no-icon">
+                                        <input required onChange={handleChange} type="text" name="pincode" placeholder="Pincode" />
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <div className="label-row"><label>City</label></div>
+                                    <div className="input-wrapper no-icon">
+                                        <input required onChange={handleChange} type="text" name="city" placeholder="City" />
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <div className="label-row"><label>State</label></div>
+                                    <div className="input-wrapper no-icon">
+                                        <input required onChange={handleChange} type="text" name="state" placeholder="State" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <div className="label-row"><label>Address Line 1</label></div>
+                                <div className="input-wrapper no-icon">
+                                    <input required onChange={handleChange} type="text" name="addressLine1" placeholder="Address Line 1" />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <div className="label-row"><label>Address Line 2 (Optional)</label></div>
+                                <div className="input-wrapper no-icon">
+                                    <input onChange={handleChange} type="text" name="addressLine2" placeholder="Address Line 2" />
                                 </div>
                             </div>
                         </>

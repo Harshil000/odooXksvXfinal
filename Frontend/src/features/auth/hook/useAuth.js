@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { AuthContext } from "../auth.context";
-import { register, login, logout, vendorRegister } from "../services/auth.api";
+import { register, login, logout, adminRegister, staffRegister } from "../services/auth.api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
 import { decodeToken } from "../utils/token.util";
@@ -26,30 +26,18 @@ function useAuth() {
       setLoading(true);
 
       const payload = {
-        name: formValues.name,
+        first_name: formValues.firstName,
+        last_name: formValues.lastName,
         email: formValues.email.toLowerCase(),
         password: formValues.password,
-        role: formValues.role,
-        ...(formValues.role === "owner"
-          ? { restaurant_name: formValues.restaurant_name }
-          : {}),
-        ...(formValues.role === "staff"
-          ? { restaurant_id: formValues.restaurant_id }
-          : {}),
       };
 
       const response = await register(payload);
       console.log("✅ Registration Response:", response);
       setUser(response.user);
 
-      // Decode token and log restaurant_id
-      const token = getTokenFromCookie();
-      if (token) {
-        const decoded = decodeToken(token);
-        if (decoded?.restaurant_id) {
-          console.log("✅ Registered - Restaurant ID:", decoded.restaurant_id);
-        }
-      }
+      // Token is automatically managed by cookies
+
 
       navigate("/");
     } catch (error) {
@@ -77,14 +65,8 @@ function useAuth() {
       });
       setUser(response.user);
 
-      // Decode token and log restaurant_id
-      const token = getTokenFromCookie();
-      if (token) {
-        const decoded = decodeToken(token);
-        if (decoded?.restaurant_id) {
-          console.log("✅ Logged In - Restaurant ID:", decoded.restaurant_id);
-        }
-      }
+      // Token is automatically managed by cookies
+
 
       navigate("/");
     } catch (error) {
@@ -116,8 +98,13 @@ function useAuth() {
   async function VendorRegisterUser(payload) {
     try {
       setLoading(true);
-
-      const response = await vendorRegister(payload);
+      
+      let response;
+      if (payload.role === 'ADMIN') {
+          response = await adminRegister(payload);
+      } else {
+          response = await staffRegister(payload);
+      }
       console.log("✅ Vendor Registration Response:", response);
       setUser(response.user);
 
@@ -125,8 +112,8 @@ function useAuth() {
       const token = getTokenFromCookie();
       if (token) {
         const decoded = decodeToken(token);
-        if (decoded?.company_id) {
-          console.log("✅ Registered - Company ID:", decoded.company_id);
+        if (decoded?.c_id) {
+          console.log("✅ Registered - Company ID:", decoded.c_id);
         }
       }
 

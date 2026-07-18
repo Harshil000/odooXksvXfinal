@@ -17,11 +17,21 @@ export async function register(data){
     }
 }
 
-export async function vendorRegister(data){
-    // data contains: firstName, lastName, companyName, productCategory, gstNo, email, password
+export async function adminRegister(data){
     try {
-        const response = await api.post("/vendor/register", data);
-        console.log("✅ Vendor Registration Response:", response);
+        const response = await api.post("/admin/register", data);
+        console.log("✅ Admin Registration Response:", response);
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        throw error.response.data;
+    }
+}
+
+export async function staffRegister(data){
+    try {
+        const response = await api.post("/staff/register", data);
+        console.log("✅ Staff Registration Response:", response);
         return response.data;
     } catch (error) {
         console.log(error);

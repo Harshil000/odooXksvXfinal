@@ -6,6 +6,8 @@ import { verifyToken } from "../middleware/auth.middleware.js"
 const authRoute = Router()
 
 authRoute.post('/register', authValidator.registerValidation, authController.registerController)
+authRoute.post('/admin/register', authValidator.adminRegisterValidation, authController.adminRegisterController)
+authRoute.post('/staff/register', authValidator.staffRegisterValidation, authController.staffRegisterController)
 authRoute.post('/login', authValidator.loginValidation, authController.loginController)
 authRoute.get('/me', verifyToken, authController.getMeController)
 authRoute.get('/logout', authController.logoutController)
