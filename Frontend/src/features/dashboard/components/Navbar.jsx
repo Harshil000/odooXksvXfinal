@@ -67,39 +67,43 @@ const Navbar = ({
             </svg>
           </div>
         )}
-        <span>{companyInfo.cname || "Your Logo"}</span>
+        <span>RentAndGo</span>
       </div>
 
       {/* Nav Links */}
       <div className="nav-links">
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "orders" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}
-        >
-          Orders
-        </a>
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "quotation" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/dashboard/quotation"); }}
-        >
-          Quotation
-        </a>
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "schedule" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/schedule"); }}
-        >
-          Schedule
-        </a>
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "assets" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/assets"); }}
-        >
-          Assets
-        </a>
+        {isVendor && (
+          <>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "orders" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}
+            >
+              Orders
+            </a>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "quotation" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/dashboard/quotation"); }}
+            >
+              Quotation
+            </a>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "schedule" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/schedule"); }}
+            >
+              Schedule
+            </a>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "assets" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/assets"); }}
+            >
+              Assets
+            </a>
+          </>
+        )}
         <div 
           className={`nav-link nav-link-container ${activeSection === "products" ? "active" : ""}`} 
           style={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: "4px", cursor: "pointer" }}
@@ -148,27 +152,24 @@ const Navbar = ({
             </div>
           )}
         </div>
-        <a 
-          href="#" 
-          className={`nav-link ${activeSection === "settings" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/profile"); }}
-        >
-          Settings
-        </a>
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "invoices" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/invoices"); }}
-        >
-          Invoices
-        </a>
-        <a
-          href="#"
-          className={`nav-link ${activeSection === "reports" ? "active" : ""}`}
-          onClick={(e) => { e.preventDefault(); navigate("/reports"); }}
-        >
-          Reports
-        </a>
+        {isVendor && (
+          <>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "invoices" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/invoices"); }}
+            >
+              Invoices
+            </a>
+            <a
+              href="#"
+              className={`nav-link ${activeSection === "reports" ? "active" : ""}`}
+              onClick={(e) => { e.preventDefault(); navigate("/reports"); }}
+            >
+              Reports
+            </a>
+          </>
+        )}
       </div>
 
       {/* Search */}
@@ -241,39 +242,43 @@ const Navbar = ({
                     </svg>
                   </div>
                 )}
-                <span>{companyInfo.cname || "Your Logo"}</span>
+                <span>RentAndGo</span>
               </div>
               <button className="drawer-close-btn" onClick={() => setShowSidebar(false)} aria-label="Close Sidebar Menu">&times;</button>
             </div>
             <div className="drawer-nav-links">
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "orders" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard"); }}
-              >
-                Orders
-              </a>
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "quotation" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard/new-order"); }}
-              >
-                Quotation
-              </a>
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "schedule" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/schedule"); }}
-              >
-                Schedule
-              </a>
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "assets" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/assets"); }}
-              >
-                Assets
-              </a>
+              {isVendor && (
+                <>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "orders" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard"); }}
+                  >
+                    Orders
+                  </a>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "quotation" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard/new-order"); }}
+                  >
+                    Quotation
+                  </a>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "schedule" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/schedule"); }}
+                  >
+                    Schedule
+                  </a>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "assets" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/assets"); }}
+                  >
+                    Assets
+                  </a>
+                </>
+              )}
               <div className="drawer-products-group" style={{ display: "flex", flexDirection: "column", width: "100%" }}>
                 <div 
                   className={`drawer-nav-link ${activeSection === "products" ? "active" : ""}`}
@@ -318,27 +323,24 @@ const Navbar = ({
                   </div>
                 )}
               </div>
-              <a 
-                href="#" 
-                className={`drawer-nav-link ${activeSection === "settings" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/profile"); }}
-              >
-                Settings
-              </a>
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "invoices" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/invoices"); }}
-              >
-                Invoices
-              </a>
-              <a
-                href="#"
-                className={`drawer-nav-link ${activeSection === "reports" ? "active" : ""}`}
-                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/reports"); }}
-              >
-                Reports
-              </a>
+              {isVendor && (
+                <>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "invoices" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/invoices"); }}
+                  >
+                    Invoices
+                  </a>
+                  <a
+                    href="#"
+                    className={`drawer-nav-link ${activeSection === "reports" ? "active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/reports"); }}
+                  >
+                    Reports
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>
