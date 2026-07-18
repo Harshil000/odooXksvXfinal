@@ -19,6 +19,7 @@ $late-delivery: #f472b6;
   background: $bg-page;
   color: $text-primary;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: normal;
 }
 
 .schedule-content {
@@ -45,6 +46,7 @@ $late-delivery: #f472b6;
     font-size: 15px;
     font-weight: 600;
     color: $text-primary;
+    letter-spacing: 0.3px;
   }
 }
 

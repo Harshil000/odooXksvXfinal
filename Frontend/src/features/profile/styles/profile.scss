@@ -5,10 +5,10 @@
     font-family: 'Inter', sans-serif;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: flex-start;
     width: 100%;
-    padding: 10px 0px;
+    padding: 0;
 
     /* Main Grid */
     .profile-grid {
@@ -17,7 +17,8 @@
         display: grid;
         grid-template-columns: 320px 1fr;
         gap: 30px;
-        padding: 0 24px;
+        padding: 40px 24px;
+        margin: 0 auto;
 
         @media (max-width: 900px) {
             grid-template-columns: 1fr;
