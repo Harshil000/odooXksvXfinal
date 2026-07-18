@@ -1,8 +1,8 @@
 import httpClient, { getErrorPayload } from "../../../shared/api/httpClient";
 
-export async function getProducts() {
+export async function getProducts(params) {
   try {
-    const response = await httpClient.get("/products");
+    const response = await httpClient.get("/products", { params });
     return response.data;
   } catch (error) {
     throw getErrorPayload(error, "Unable to load products");

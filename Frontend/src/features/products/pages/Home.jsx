@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../../cart/hooks/useCart';
@@ -10,11 +10,33 @@ import '../styles/Home.scss';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { products, attributes, loading, error } = useProducts();
+  const { products, attributes, loading, error, hasMore, loadMore } = useProducts();
   const { totals } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState({});
+  const observerRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasMore || loading) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    }, { threshold: 1.0 });
+
+    const currentTrigger = observerRef.current;
+    if (currentTrigger) {
+      observer.observe(currentTrigger);
+    }
+
+    return () => {
+      if (currentTrigger) {
+        observer.unobserve(currentTrigger);
+      }
+    };
+  }, [hasMore, loading, loadMore]);
 
   const { user } = useContext(AuthContext);
   const isAdmin = user && (user.role === 'admin' || user.role === 'ADMIN');
@@ -169,12 +191,10 @@ const Home = () => {
             ))}
           </div>
 
-          <div className="pagination">
-            <button>&lt;</button>
-            <button>1</button>
-            <button>2</button>
-            <span>...</span>
-            <button>&gt;</button>
+          {/* Scroll trigger / loading indicator */}
+          <div ref={observerRef} className="infinite-scroll-trigger">
+            {loading && <div className="loading-spinner">Loading more products...</div>}
+            {!hasMore && products.length > 0 && <div className="no-more-products">No more products to display.</div>}
           </div>
         </main>
       </div>

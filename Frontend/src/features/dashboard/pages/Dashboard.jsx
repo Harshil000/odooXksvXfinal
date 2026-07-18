@@ -4,6 +4,7 @@ import { useDashboardOrders } from "../hooks/useDashboardOrders";
 import Navbar from "../components/Navbar";
 import OrdersTable from "../components/OrdersTable";
 import OrdersKanban from "../components/OrdersKanban";
+import OrderDetailModal from "../components/OrderDetailModal";
 import "../styles/Dashboard.scss";
 
 function formatCurrency(amount) {
@@ -16,6 +17,7 @@ function formatCurrency(amount) {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("dashboard_view_mode") || "list");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const {
     orders,
@@ -180,11 +182,18 @@ const Dashboard = () => {
 
         {/* Orders Table or Kanban view */}
         {viewMode === "list" ? (
-          <OrdersTable orders={orders} />
+          <OrdersTable orders={orders} onRowClick={setSelectedOrder} />
         ) : (
-          <OrdersKanban orders={orders} onStatusUpdate={refresh} />
+          <OrdersKanban orders={orders} onStatusUpdate={refresh} onCardClick={setSelectedOrder} />
         )}
       </div>
+
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 };

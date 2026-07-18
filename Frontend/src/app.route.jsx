@@ -11,6 +11,8 @@ import Dashboard from "./features/dashboard/pages/Dashboard";
 import NewOrder from "./features/dashboard/pages/NewOrder";
 import Schedule from "./features/schedule/pages/Schedule";
 import Assets from "./features/assets/pages/Assets";
+import Invoices from "./features/invoices/pages/Invoices";
+import Reports from "./features/reports/pages/Reports";
 
 const router = createBrowserRouter([
   {
@@ -49,6 +51,14 @@ const router = createBrowserRouter([
   {
     path: "/assets",
     element: <Assets />,
+  },
+  {
+    path: "/invoices",
+    element: <Invoices />,
+  },
+  {
+    path: "/reports",
+    element: <Reports />,
   },
   {
     path: "/login",

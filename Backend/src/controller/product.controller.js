@@ -54,7 +54,9 @@ export async function createProductController(req, res, next) {
 
 export async function getAllProductsController(req, res, next) {
   try {
-    const products = await getAllProducts();
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    const products = await getAllProducts(limit, offset);
     const productIds = products.map(p => p.p_id);
     const attributes = await getProductsAttributes(productIds);
     return res.status(200).json({ products, attributes });

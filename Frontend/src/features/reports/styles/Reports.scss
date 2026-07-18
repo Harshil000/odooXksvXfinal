@@ -1,0 +1,436 @@
+$bg-page: #0b0b0e;
+$bg-card: #111116;
+$bg-soft: #15151c;
+$border: #303038;
+$text-primary: #f8fafc;
+$text-secondary: #a1a1aa;
+$text-muted: #71717a;
+$accent: #c084fc;
+$blue: #38bdf8;
+$bar: #164e73;
+
+.reports-page {
+  min-height: 100vh;
+  background: $bg-page;
+  color: $text-primary;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.reports-content {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.reports-toolbar {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid $border;
+  border-radius: 8px 8px 0 0;
+  background: $bg-card;
+}
+
+.reports-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+}
+
+.report-settings {
+  position: relative;
+}
+
+.report-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid $border;
+  border-radius: 6px;
+  background: $bg-soft;
+  color: $text-primary;
+  cursor: pointer;
+}
+
+.report-settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 150px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  background: $bg-soft;
+  padding: 6px;
+  z-index: 20;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+
+  button {
+    display: block;
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: $text-secondary;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: #20202a;
+      color: $text-primary;
+    }
+  }
+}
+
+.report-month-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $text-secondary;
+  font-size: 12px;
+
+  input {
+    height: 34px;
+    border: 1px solid $border;
+    border-radius: 6px;
+    background: $bg-soft;
+    color: $text-primary;
+    padding: 0 10px;
+  }
+}
+
+.report-view-tabs {
+  justify-self: end;
+  display: flex;
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+
+  button {
+    width: 46px;
+    height: 34px;
+    border: none;
+    border-right: 1px solid $border;
+    background: $bg-soft;
+    color: $text-muted;
+    cursor: pointer;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &.active {
+      color: $blue;
+      background: #1b2430;
+    }
+  }
+}
+
+.report-print-area {
+  border: 1px solid $border;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background: $bg-card;
+  padding: 24px;
+}
+
+.report-summary {
+  h2 {
+    margin: 0 0 14px;
+    font-size: 18px;
+  }
+}
+
+.report-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+
+  div {
+    border: 1px solid $border;
+    border-radius: 8px;
+    background: $bg-soft;
+    padding: 14px;
+  }
+
+  span {
+    display: block;
+    color: $text-muted;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  strong {
+    font-size: 18px;
+  }
+}
+
+.reports-error,
+.reports-loading,
+.reports-empty {
+  border: 1px dashed $border;
+  border-radius: 8px;
+  padding: 32px;
+  color: $text-muted;
+  text-align: center;
+}
+
+.report-chart {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  min-height: 360px;
+  margin: 18px 0 26px;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-right: 14px;
+  color: $text-muted;
+  font-size: 11px;
+  border-right: 2px solid $text-secondary;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: end;
+  gap: 28px;
+  padding: 0 26px;
+  border-bottom: 2px solid $text-secondary;
+  overflow-x: auto;
+}
+
+.chart-bar-item {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+  min-width: 88px;
+  height: 330px;
+  text-align: center;
+
+  strong {
+    color: $text-secondary;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.chart-bar-track {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+
+  span {
+    width: 58px;
+    border: 2px solid $blue;
+    border-radius: 12px 12px 8px 8px;
+    background: $bar;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.18);
+  }
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 11px 12px;
+    border-top: 1px solid $border;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  th {
+    color: $text-secondary;
+  }
+}
+
+@media (max-width: 760px) {
+  .reports-toolbar,
+  .report-summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .report-view-tabs {
+    justify-self: start;
+  }
+}
+
+@media print {
+  .dashboard-nav,
+  .reports-toolbar {
+    display: none !important;
+  }
+
+  .reports-page,
+  .reports-content,
+  .report-print-area {
+    background: #fff;
+    color: #000;
+    padding: 0;
+    border: none;
+  }
+
+  .report-summary-cards div,
+  .report-table th,
+  .report-table td {
+    border-color: #999;
+  }
+
+  .chart-y-axis,
+  .chart-bars {
+    border-color: #333;
+  }
+}
+
+// ─── Chart Container ────────────────────────────────────
+.report-chart-container {
+  margin: 18px 0 26px;
+  background: $bg-soft;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+// Override report-chart margin since it is now inside container
+.report-chart {
+  margin: 0;
+}
+
+// ─── Pie (Donut) Chart ──────────────────────────────────
+.report-pie-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: 20px 0;
+  flex-wrap: wrap;
+
+  .pie-chart-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+
+    .donut-chart-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .donut-slice {
+      transition: stroke-width 0.2s ease, filter 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        stroke-width: 24px;
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.1));
+      }
+    }
+  }
+
+  .pie-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 220px;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+
+      .legend-color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .legend-name {
+        color: $text-secondary;
+        flex-grow: 1;
+      }
+
+      .legend-value {
+        color: $text-primary;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+  }
+}
+
+// ─── Line Chart ──────────────────────────────────────────
+.report-line-container {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  min-height: 270px;
+  position: relative;
+
+  .line-chart-y-axis-labels {
+    position: relative;
+    height: 250px;
+    border-right: 2px solid $text-secondary;
+    padding-right: 14px;
+
+    span {
+      font-size: 11px;
+      color: $text-muted;
+      font-weight: 500;
+    }
+  }
+
+  .line-chart-svg-wrapper {
+    position: relative;
+    height: 250px;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+
+      .line-chart-node {
+        transition: r 0.15s ease, stroke-width 0.15s ease;
+        cursor: pointer;
+
+        &:hover {
+          r: 7;
+          stroke-width: 3.5px;
+        }
+      }
+    }
+
+    .line-chart-x-axis-labels {
+      position: absolute;
+      bottom: -24px;
+      left: 0;
+      width: 100%;
+      height: 20px;
+
+      span {
+        position: absolute;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: $text-muted;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
