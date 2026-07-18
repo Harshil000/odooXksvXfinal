@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { getCurrentUser } from '../../auth/services/auth.api';
 import { createCompanyAttribute } from '../../attributes/api/attribute.api';
 import { loadCompanyAttributes, saveProductAttributes } from '../../attributes/services/attribute.service';
-import { saveProduct } from '../services/product.service';
-import { saveRentPlans } from '../../rentPlans/services/rentPlan.service';
+import { saveProduct, loadProductDetails, editProduct } from '../services/product.service';
+import { loadProductRentPlans, saveRentPlans } from '../../rentPlans/services/rentPlan.service';
 import { buildProductPayload } from '../utils/productPayload.util';
+import { createProductImage } from '../api/product.api';
 import '../styles/AddProduct.scss';
 
 const AddProduct = () => {
   const navigate = useNavigate();
+  const { p_id } = useParams();
+  const isEditMode = !!p_id;
+  const [initialQty, setInitialQty] = useState(0);
+
   const [activeTab, setActiveTab] = useState('general');
   const [imagePreviews, setImagePreviews] = useState([]);
   const [companyAttributes, setCompanyAttributes] = useState([]);
@@ -52,15 +57,72 @@ const AddProduct = () => {
 
         if (actualCId) {
           setCId(actualCId);
-          const attributes = await loadCompanyAttributes(actualCId);
-          setCompanyAttributes(attributes);
+          const compAttrs = await loadCompanyAttributes(actualCId);
+          setCompanyAttributes(compAttrs);
+
+          if (isEditMode) {
+            const details = await loadProductDetails(p_id);
+            const plans = await loadProductRentPlans(p_id);
+
+            if (details && details.product) {
+              setProductData({
+                pname: details.product.pname || '',
+                description: details.product.description || '',
+                quantity: details.product.quantity || 0,
+                to_publish: details.product.to_publish ?? true,
+              });
+              setInitialQty(details.product.quantity || 0);
+
+              setSalesData({
+                product_type: details.product.product_type || 'Goods',
+                sales_price: details.product.sales_price || '',
+                cost_price: details.product.cost_price || '',
+              });
+
+              if (details.images && details.images.length > 0) {
+                setImagePreviews(details.images);
+              }
+
+              if (plans && plans.length > 0) {
+                setRentPlans(plans.map(p => ({
+                  periodicity: p.duration_type || 'hourly',
+                  price: p.price || '',
+                  pickup: p.pickup_time ? p.pickup_time.substring(0, 16) : '',
+                  return: p.return_time ? p.return_time.substring(0, 16) : '',
+                  late_fees: p.penalty || '',
+                  security_deposit: p.deposit || '',
+                })));
+              }
+
+              if (details.attributes) {
+                const attrMap = {};
+                details.attributes.forEach(attr => {
+                  if (attr.p_id === p_id) {
+                    if (!attrMap[attr.attribute_name]) {
+                      attrMap[attr.attribute_name] = [];
+                    }
+                    if (!attrMap[attr.attribute_name].includes(attr.value_name)) {
+                      attrMap[attr.attribute_name].push(attr.value_name);
+                    }
+                  }
+                });
+                const formattedAttrs = Object.keys(attrMap).map(name => ({
+                  name,
+                  values: attrMap[name].join(', ')
+                }));
+                if (formattedAttrs.length > 0) {
+                  setAttributes(formattedAttrs);
+                }
+              }
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to fetch attributes or context", err);
       }
     };
     fetchContextAndAttributes();
-  }, []);
+  }, [p_id, isEditMode]);
 
   const handleCreateNewAttribute = async () => {
     if (!c_id) {
@@ -110,28 +172,48 @@ const AddProduct = () => {
     }
 
     try {
-      const productPayload = buildProductPayload({
-        companyId: c_id,
-        productData,
-        salesData,
-        imagePreviews,
-        attributes,
-      });
+      let savedProductId = p_id;
 
-      const product = await saveProduct(productPayload);
-      const p_id = product.p_id;
+      if (isEditMode) {
+        await editProduct(p_id, {
+          pname: productData.pname,
+          description: productData.description,
+          to_publish: productData.to_publish,
+          quantity: productData.quantity,
+          product_type: salesData.product_type,
+          sales_price: Number(salesData.sales_price || 0),
+          cost_price: Number(salesData.cost_price || 0),
+        });
 
-      await saveRentPlans(p_id, rentPlans);
+        // Save new base64 images
+        for (const img of imagePreviews) {
+          if (img.startsWith('data:image/')) {
+            await createProductImage(p_id, img);
+          }
+        }
+      } else {
+        const productPayload = buildProductPayload({
+          companyId: c_id,
+          productData,
+          salesData,
+          imagePreviews,
+        });
+
+        const product = await saveProduct(productPayload);
+        savedProductId = product.p_id;
+      }
+
+      await saveRentPlans(savedProductId, rentPlans);
       const savedAttributes = await saveProductAttributes({
         companyId: c_id,
-        productId: p_id,
+        productId: savedProductId,
         attributes,
         companyAttributes,
       });
       setCompanyAttributes(savedAttributes);
 
-      alert('Product added successfully!');
-      navigate('/');
+      alert(isEditMode ? 'Product updated successfully!' : 'Product added successfully!');
+      navigate(isEditMode ? `/product/${p_id}` : '/');
     } catch (error) {
       console.error(error);
       alert('Error saving product: ' + error.message);
@@ -151,9 +233,6 @@ const AddProduct = () => {
             <div>
               <span className="type-badge">New</span>
               <h2>Product</h2>
-              <div className="status-icons">
-                <span>☑</span> <span className="error-icon">☒</span>
-              </div>
             </div>
             
             <label style={{display: 'block', marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Product Name</label>
@@ -215,7 +294,16 @@ const AddProduct = () => {
                 </div>
                 <div className="form-row">
                   <label>Quantity on Hand</label>
-                  <input type="number" value={productData.quantity} onChange={(e) => setProductData({...productData, quantity: e.target.value})} />
+                  <input 
+                    type="number" 
+                    value={productData.quantity} 
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (isEditMode && val < initialQty) return;
+                      setProductData({...productData, quantity: val});
+                    }} 
+                    min={isEditMode ? initialQty : 0}
+                  />
                 </div>
                 <div className="form-row" style={{marginTop: '2rem'}}>
                   <label>Sales Price $</label>
@@ -229,12 +317,11 @@ const AddProduct = () => {
               <div className="column">
                 <div className="form-row">
                   <label>Publish</label>
-                  <label className="toggle-switch">
+                  <label className="toggle-switch small-toggle">
                     <input type="checkbox" checked={productData.to_publish} onChange={(e) => setProductData({...productData, to_publish: e.target.checked})} />
                     <span className="slider"></span>
                   </label>
                 </div>
-                <p style={{color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '150px'}}>Only Admin should have the right to publish or unpublish a product</p>
               </div>
             </div>
           )}

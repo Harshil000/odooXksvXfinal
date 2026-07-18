@@ -1,10 +1,13 @@
-import { createProduct, getProductById, getProducts, updateProduct } from "../api/product.api";
+import { createProduct, getProductById, getProducts, updateProduct, deleteProduct } from "../api/product.api";
 import { mapProductDetails, mapProductToCard } from "../utils/product.mapper";
 
-export async function loadProductCards() {
-  const data = await getProducts();
+export async function loadProductCards(limit, offset) {
+  const data = await getProducts({ limit, offset });
 
-  return (data.products || []).map(mapProductToCard);
+  return {
+    products: (data.products || []).map(mapProductToCard),
+    attributes: data.attributes || [],
+  };
 }
 
 export async function loadProductDetails(productId) {
@@ -31,3 +34,14 @@ export async function publishProduct(product, toPublish) {
 
   return response.product;
 }
+
+export async function removeProduct(productId) {
+  return await deleteProduct(productId);
+}
+
+export async function editProduct(productId, payload) {
+  const response = await updateProduct(productId, payload);
+  return response.product;
+}
+
+

@@ -256,6 +256,36 @@
     position: relative;
     overflow: hidden;
     padding: 1rem;
+
+    .admin-card-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+
+      button {
+        background: rgba(17, 17, 22, 0.85);
+        border: 1px solid #27272a;
+        color: #fff;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #cda4ff;
+          color: #000;
+          border-color: #cda4ff;
+        }
+      }
+    }
     
     img {
       width: 100%;
@@ -271,6 +301,22 @@
       border-radius: 20px;
       color: var(--text-secondary);
       font-size: 0.9rem;
+    }
+
+    .unpublished-badge {
+      position: absolute;
+      background: rgba(248, 113, 113, 0.9);
+      border: 1px solid rgba(248, 113, 113, 0.5);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      top: 8px;
+      left: 8px;
+      z-index: 10;
     }
 
     .variants {
@@ -301,30 +347,42 @@
   }
 }
 
-.pagination {
+.infinite-scroll-trigger {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 3rem;
-  margin-bottom: 2rem;
+  justify-content: center;
+  width: 100%;
+  padding: 32px 0;
+  margin-top: 24px;
+  clear: both;
 
-  button {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+  .loading-spinner {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent, #c084fc);
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
+    gap: 8px;
+    animation: pulse 1.5s infinite ease-in-out;
+  }
 
-    &:hover {
-      background: var(--bg-secondary);
-      border-color: var(--accent);
-    }
+  .no-more-products {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted, #71717a);
+    background: var(--bg-soft, #15151c);
+    border: 1px dashed var(--border-color, #27272a);
+    padding: 10px 24px;
+    border-radius: 20px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
   }
 }

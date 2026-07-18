@@ -143,11 +143,69 @@
           background-color: #1e1e1e; // Matches the dark box from mockup
           height: 500px;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          position: relative;
           
-          img {
+          img.swiper-image {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+          }
+
+          .swiper-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(17, 17, 22, 0.85);
+            border: 1px solid #27272a;
+            color: #fff;
+            font-size: 1.25rem;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            z-index: 5;
+
+            &:hover {
+              background: #cda4ff;
+              color: #000;
+              border-color: #cda4ff;
+            }
+
+            &.left {
+              left: 15px;
+            }
+
+            &.right {
+              right: 15px;
+            }
+          }
+
+          .swiper-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+
+            .swiper-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              background: rgba(255, 255, 255, 0.35);
+              cursor: pointer;
+              transition: all 0.2s ease;
+
+              &.active {
+                background: #cda4ff;
+                transform: scale(1.25);
+              }
+            }
           }
           
           .no-image {
@@ -159,16 +217,114 @@
       .info-column {
         flex: 1.2;
         
-        .product-title {
-          font-size: 2.5rem;
-          margin: 0 0 0.5rem 0;
-          font-weight: 600;
+        .product-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1.5rem;
+          margin-bottom: 0.5rem;
+
+          .product-title {
+            font-size: 2.2rem;
+            margin: 0 0 0.25rem 0;
+            font-weight: 600;
+          }
+          
+          .product-id {
+            font-size: 0.9rem;
+            color: #888888;
+            margin-bottom: 0;
+          }
+
+          .admin-detail-actions {
+            display: flex;
+            gap: 8px;
+
+            button {
+              border: 1px solid #27272a;
+              border-radius: 6px;
+              padding: 6px 14px;
+              font-size: 0.85rem;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s;
+
+              &.admin-edit-btn {
+                background: #1a1a24;
+                color: #cda4ff;
+                border-color: rgba(205, 164, 255, 0.2);
+
+                &:hover {
+                  background: #cda4ff;
+                  color: #000;
+                  border-color: #cda4ff;
+                }
+              }
+
+              &.admin-delete-btn {
+                background: rgba(248, 113, 113, 0.1);
+                border-color: rgba(248, 113, 113, 0.2);
+                color: #f87171;
+
+                &:hover {
+                  background: #f87171;
+                  color: #000;
+                  border-color: #f87171;
+                }
+              }
+            }
+          }
         }
-        
-        .product-id {
-          font-size: 0.9rem;
-          color: #888888;
-          margin-bottom: 1.5rem;
+
+        .side-attributes-section {
+          margin-bottom: 2rem;
+          margin-top: 1rem;
+
+          h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            color: #ffffff;
+            font-weight: 600;
+            border-bottom: 1px solid #27272a;
+            padding-bottom: 6px;
+          }
+
+          .side-attributes-table {
+            width: 100%;
+            border-collapse: collapse;
+
+            td {
+              padding: 0.6rem 0;
+              border-bottom: 1px solid #1f1f24;
+              font-size: 0.95rem;
+
+              &.attr-name {
+                color: #a1a1aa;
+                font-weight: 500;
+                width: 150px;
+              }
+
+              &.attr-value {
+                .attr-select {
+                  background-color: #14141a;
+                  border: 1px solid #27272a;
+                  color: #ffffff;
+                  padding: 6px 12px;
+                  border-radius: 6px;
+                  font-family: inherit;
+                  font-size: 0.9rem;
+                  outline: none;
+                  cursor: pointer;
+                  width: 180px;
+                  transition: border-color 0.2s;
+
+                  &:focus {
+                    border-color: #cda4ff;
+                  }
+                }
+              }
+            }
+          }
         }
         
         .price-label {

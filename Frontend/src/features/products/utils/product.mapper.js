@@ -9,6 +9,7 @@ export function mapProductToCard(product) {
     colors: [],
     outOfStock: product.quantity <= 0,
     pname: product.pname,
+    to_publish: product.to_publish,
   };
 }
 
@@ -16,5 +17,8 @@ export function mapProductDetails(data) {
   return {
     product: data.product,
     image: data.images?.[0]?.image_base64 || "",
+    images: data.images?.map(img => img.image_base64) || [],
+    variants: data.variants || [],
+    attributes: data.attributes || [],
   };
 }

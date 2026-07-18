@@ -33,9 +33,21 @@ export async function createProduct(c_id, productData) {
   return result.rows[0];
 }
 
-export async function getAllProducts() {
+export async function getAllProducts(limit = null, offset = 0) {
   const pool = getPool();
-  const result = await pool.query(SELECT_ALL_PRODUCTS_QUERY);
+  let query = SELECT_ALL_PRODUCTS_QUERY.trim();
+  if (query.endsWith(";")) {
+    query = query.slice(0, -1);
+  }
+  
+  const params = [];
+  if (limit !== null) {
+    query += ` LIMIT $1 OFFSET $2`;
+    params.push(limit, offset);
+  }
+  query += ";";
+  
+  const result = await pool.query(query, params);
   return result.rows;
 }
 
@@ -105,3 +117,31 @@ export async function getAssetsByProductId(p_id) {
   const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
   return result.rows;
 }
+
+export async function getProductVariants(pname, c_id) {
+  const pool = getPool();
+  const query = `
+    SELECT p.p_id, p.c_id, p.pname, p.description, p.to_publish, p.quantity, p.product_type, p.sales_price, p.cost_price,
+           (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image
+    FROM products p
+    WHERE LOWER(p.pname) = LOWER($1) AND p.c_id = $2;
+  `;
+  const result = await pool.query(query, [pname, c_id]);
+  return result.rows;
+}
+
+export async function getProductsAttributes(p_ids) {
+  if (!p_ids || p_ids.length === 0) return [];
+  const pool = getPool();
+  const query = `
+    SELECT pa.p_id, a.attri_id, a.name AS attribute_name, ak.key_id, ak.key_name, av.value_id, av.value_name
+    FROM product_attributes pa
+    JOIN attributes a ON pa.attri_id = a.attri_id
+    LEFT JOIN attribute_keys ak ON a.attri_id = ak.attri_id
+    LEFT JOIN attribute_values av ON ak.key_id = av.key_id
+    WHERE pa.p_id = ANY($1);
+  `;
+  const result = await pool.query(query, [p_ids]);
+  return result.rows;
+}
+
