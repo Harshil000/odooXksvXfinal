@@ -24,21 +24,22 @@ test("stores and retrieves users from the local JSON database", async () => {
     await initializeStore();
 
     const createdUser = await createUserRecord({
-      full_name: "Ada Lovelace",
+      first_name: "Ada",
+      last_name: "Lovelace",
       email: "ada@example.com",
       password_hash: "hashed-password",
     });
 
-    assert.equal(createdUser.full_name, "Ada Lovelace");
+    assert.equal(createdUser.first_name, "Ada");
     assert.equal(createdUser.email, "ada@example.com");
 
     const byEmail = await findUserByEmail("ada@example.com");
     assert.ok(byEmail);
-    assert.equal(byEmail.password_hash, "hashed-password");
+    assert.equal(byEmail.password, "hashed-password");
 
-    const byId = await findUserById(createdUser.id);
+    const byId = await findUserById(createdUser.u_id);
     assert.ok(byId);
-    assert.equal(byId.id, createdUser.id);
+    assert.equal(byId.u_id, createdUser.u_id);
   } finally {
     delete process.env.AUTH_DB_PATH;
     await rm(tempDir, { recursive: true, force: true });

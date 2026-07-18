@@ -4,6 +4,8 @@ import { resolveDatabaseMode } from "../database/dbMode.js";
 
 dotenv.config();
 
+let pool = null;
+
 const connectDB = async () => {
   const mode = resolveDatabaseMode();
 
@@ -15,9 +17,11 @@ const connectDB = async () => {
 
   const connectionString = process.env.DATABASE_URL;
   const { Pool } = await import("pg");
-  const pool = new Pool({ connectionString });
+  pool = new Pool({ connectionString });
   await pool.query("SELECT 1");
   console.log("PostgreSQL connected");
 };
+
+export const getPool = () => pool;
 
 export default connectDB;
