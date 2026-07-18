@@ -1,15 +1,16 @@
 import app from "./src/app.js";
 import connectDB from "./src/config/database.js";
-import { initCron } from "./src/cron/testCron.js";
+import { initQdrantCollection } from "./src/service/qdrant.service.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
 try {
   await connectDB();
-  // initCron();
 
   app.listen(PORT, () => {
     console.log(`server is running on port ${PORT}`);
+    // Initialize Qdrant collection after server starts (non-blocking)
+    initQdrantCollection();
   });
 } catch (err) {
   console.error(`Due to error: ${err.message}`);

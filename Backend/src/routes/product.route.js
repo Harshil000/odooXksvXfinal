@@ -8,6 +8,7 @@ import {
   deleteProductController,
   createProductImageController,
   deleteProductImageController,
+  searchProductsController,
 } from "../controller/product.controller.js";
 
 const productRoute = Router();
@@ -15,6 +16,9 @@ const productRoute = Router();
 // ==========================================
 // PRODUCTS
 // ==========================================
+
+// Search products (hybrid: vector + keyword) — must be BEFORE /:p_id to avoid route conflicts
+productRoute.get("/search", verifyToken, searchProductsController);
 
 // Get all products (open to all authenticated users)
 productRoute.get("/", verifyToken, getAllProductsController);

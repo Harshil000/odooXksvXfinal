@@ -8,6 +8,8 @@ import {
   getImagesByProductId,
   deleteProductImage,
 } from "../repository/product.repository.js";
+import { indexProduct, searchProducts } from "../service/search.service.js";
+import { deleteProductVector } from "../service/qdrant.service.js";
 
 // ==========================================
 // PRODUCTS
@@ -33,6 +35,12 @@ export async function createProductController(req, res, next) {
         }
       }
     }
+
+    // Fire-and-forget: index the product in Qdrant asynchronously
+    // Product creation is never blocked or failed by this step
+    indexProduct(product).catch((err) =>
+      console.error("[Search] Background indexing failed for product", product.p_id, err.message)
+    );
 
     return res.status(201).json({ message: "Product created successfully", product, images: createdImages });
   } catch (error) {
@@ -78,6 +86,11 @@ export async function updateProductController(req, res, next) {
 
     if (!product) return res.status(404).json({ message: "Product not found" });
 
+    // Fire-and-forget: re-index the updated product in Qdrant
+    indexProduct(product).catch((err) =>
+      console.error("[Search] Background re-indexing failed for product", p_id, err.message)
+    );
+
     return res.status(200).json({ message: "Product updated successfully", product });
   } catch (error) {
     next(error);
@@ -92,7 +105,35 @@ export async function deleteProductController(req, res, next) {
     const deleted = await deleteProduct(p_id);
     if (!deleted) return res.status(404).json({ message: "Product not found" });
 
+    // Fire-and-forget: remove the vector from Qdrant
+    deleteProductVector(p_id).catch((err) =>
+      console.error("[Search] Background vector deletion failed for product", p_id, err.message)
+    );
+
     return res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ==========================================
+// SEARCH
+// ==========================================
+
+/**
+ * GET /api/products/search?q=<query>
+ * Hybrid search: vector similarity (Qdrant) + keyword (PostgreSQL ILIKE)
+ * Keyword matches appear first, then vector matches, deduplicated by p_id.
+ */
+export async function searchProductsController(req, res, next) {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(400).json({ message: "Search query (q) is required" });
+    }
+
+    const results = await searchProducts(q.trim());
+    return res.status(200).json({ query: q, count: results.length, products: results });
   } catch (error) {
     next(error);
   }
