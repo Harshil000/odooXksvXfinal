@@ -2,6 +2,7 @@ import { readAssetCodeFromQr } from "./qr.util";
 
 export function mapProductWithAssets(product, assets) {
   return {
+    ...product,
     id: product.p_id,
     name: product.pname,
     quantity: Number(product.quantity || 0),

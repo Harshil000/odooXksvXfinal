@@ -16,8 +16,16 @@ const Assets = () => {
     createOneAsset,
   } = useAssets();
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [selectedQRAsset, setSelectedQRAsset] = useState(null);
+  const [scannedProductModalAsset, setScannedProductModalAsset] = useState(null);
   const [scannerError, setScannerError] = useState("");
   const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (matchedAsset) {
+      setScannedProductModalAsset(matchedAsset);
+    }
+  }, [matchedAsset]);
 
   useEffect(() => {
     if (!scannerOpen) return undefined;
@@ -83,6 +91,92 @@ const Assets = () => {
       if (stream) stream.getTracks().forEach((track) => track.stop());
     };
   }, [scannerOpen, setScanQuery]);
+
+  const handlePrintQR = (asset) => {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print QR - ${asset.code}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              font-family: Arial, sans-serif;
+            }
+            img {
+              width: 300px;
+              height: 300px;
+            }
+            h1 {
+              font-size: 24px;
+              margin: 20px 0 10px;
+            }
+            p {
+              font-size: 14px;
+              color: #555;
+              margin: 0;
+            }
+            @media print {
+              body {
+                height: auto;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${asset.qr}" alt="QR Code" />
+          <h1>Code: ${asset.code}</h1>
+          <p>ID: ${asset.id}</p>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDownloadQR = (asset) => {
+    const img = new Image();
+    img.src = asset.qr;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      canvas.width = 400;
+      canvas.height = 480;
+      
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.drawImage(img, 50, 20, 300, 300);
+      
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 18px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(`CODE: ${asset.code}`, 200, 360);
+      
+      ctx.font = "14px Arial";
+      ctx.fillStyle = "#555555";
+      ctx.fillText(`ID: ${asset.id}`, 200, 400);
+      
+      const jpgUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const link = document.createElement("a");
+      link.href = jpgUrl;
+      link.download = `qr_${asset.code}_${asset.id}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+  };
 
   return (
     <div className="assets-page">
@@ -169,7 +263,7 @@ const Assets = () => {
                       <div className="asset-empty">No assets generated yet.</div>
                     ) : (
                       product.assets.map((asset) => (
-                        <article className="asset-row" key={asset.id}>
+                        <article className="asset-row" key={asset.id} onClick={() => setSelectedQRAsset(asset)} style={{ cursor: "pointer" }}>
                           <img src={asset.qr} alt={`${asset.code} QR`} />
                           <div>
                             <strong>{asset.code}</strong>
@@ -223,6 +317,62 @@ const Assets = () => {
               )}
             </div>
           </section>
+        </div>
+      )}
+      {selectedQRAsset && (
+        <div className="qr-modal-overlay" onClick={() => setSelectedQRAsset(null)}>
+          <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="qr-modal-close" onClick={() => setSelectedQRAsset(null)} aria-label="Close modal">&times;</button>
+            <div className="qr-modal-image">
+              <img src={selectedQRAsset.qr} alt={`${selectedQRAsset.code} QR`} />
+            </div>
+            <div className="qr-modal-info">
+              <h3>CODE: {selectedQRAsset.code}</h3>
+              <span>ID: {selectedQRAsset.id}</span>
+            </div>
+            <div className="qr-modal-actions">
+              <button className="print-btn" onClick={() => handlePrintQR(selectedQRAsset)}>Print</button>
+              <button className="download-btn" onClick={() => handleDownloadQR(selectedQRAsset)}>Download</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {scannedProductModalAsset && (
+        <div className="product-scan-modal-overlay" onClick={() => { setScannedProductModalAsset(null); setScanQuery(""); }}>
+          <div className="product-scan-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="qr-modal-close" onClick={() => { setScannedProductModalAsset(null); setScanQuery(""); }} aria-label="Close modal">&times;</button>
+            <div className="product-scan-details">
+              {scannedProductModalAsset.product.image ? (
+                <img className="product-scan-img" src={scannedProductModalAsset.product.image} alt={scannedProductModalAsset.product.name} />
+              ) : (
+                <div className="product-scan-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a22", color: "#71717a", fontSize: "12px" }}>No Image</div>
+              )}
+              <div className="product-scan-info">
+                <h2>{scannedProductModalAsset.product.name}</h2>
+                <div className="scan-badge-row">
+                  <span className="scan-badge type">{scannedProductModalAsset.product.productType || "Product"}</span>
+                  <span className="scan-badge price">₹{scannedProductModalAsset.product.price} / per {scannedProductModalAsset.product.duration || "month"}</span>
+                </div>
+                <p className="scan-desc">
+                  {scannedProductModalAsset.product.description || scannedProductModalAsset.product.p_description || "No description provided."}
+                </p>
+              </div>
+            </div>
+            
+            <div className="matched-asset-section">
+              <h4>Matched Asset Info</h4>
+              <div className="matched-asset-box">
+                <div className="asset-code-group">
+                  <strong>{scannedProductModalAsset.asset.code}</strong>
+                  <span>ID: {scannedProductModalAsset.asset.id}</span>
+                </div>
+                <div className="asset-quantities">
+                  <strong>{scannedProductModalAsset.product.assets.length} Assets</strong>
+                  <span>Stock Qty: {scannedProductModalAsset.product.quantity}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
