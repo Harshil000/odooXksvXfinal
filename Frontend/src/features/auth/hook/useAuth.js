@@ -63,12 +63,16 @@ function useAuth() {
         email: formValues.email.toLowerCase(),
         password: formValues.password,
       });
-      setUser(response.user);
+      const resolvedUser = response.user || response.vendor;
+      setUser(resolvedUser);
 
       // Token is automatically managed by cookies
-
-
-      navigate("/profile");
+      const isVendor = !!(resolvedUser.role || resolvedUser.v_id || resolvedUser.c_id);
+      if (isVendor) {
+        navigate("/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       if (Array.isArray(error?.errors)) {
         error.errors.forEach((item) => {
@@ -114,7 +118,8 @@ function useAuth() {
           response = await staffRegister(payload);
       }
       console.log("✅ Vendor Registration Response:", response);
-      setUser(response.user);
+      const resolvedUser = response.user || response.vendor;
+      setUser(resolvedUser);
 
       // Decode token 
       const token = getTokenFromCookie();
@@ -125,7 +130,7 @@ function useAuth() {
         }
       }
 
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       if (Array.isArray(error?.errors)) {
         error.errors.forEach((item) => {
