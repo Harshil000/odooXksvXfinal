@@ -20,6 +20,13 @@ const connectDB = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Alter total_distance_km column type to unrestricted NUMERIC
+  try {
+    await pool.query("ALTER TABLE delivery_routes ALTER COLUMN total_distance_km TYPE NUMERIC;");
+  } catch (err) {
+    console.error("Failed to alter delivery_routes column type:", err.message);
+  }
 };
 
 export const getPool = () => pool;

@@ -17,6 +17,7 @@ const AddProduct = () => {
 
   const [activeTab, setActiveTab] = useState('general');
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [newImages, setNewImages] = useState([]);
   const [companyAttributes, setCompanyAttributes] = useState([]);
   const [c_id, setCId] = useState(null);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
@@ -157,6 +158,7 @@ const AddProduct = () => {
         reader.readAsDataURL(file);
       }))).then((images) => {
         setImagePreviews((current) => [...current, ...images]);
+        setNewImages((current) => [...current, ...images]);
       });
     }
   };
@@ -186,7 +188,7 @@ const AddProduct = () => {
         });
 
         // Save new base64 images
-        for (const img of imagePreviews) {
+        for (const img of newImages) {
           if (img.startsWith('data:image/')) {
             await createProductImage(p_id, img);
           }
@@ -306,11 +308,11 @@ const AddProduct = () => {
                   />
                 </div>
                 <div className="form-row" style={{marginTop: '2rem'}}>
-                  <label>Sales Price $</label>
+                  <label>Sales Price ₹</label>
                   <input type="number" value={salesData.sales_price} onChange={(e) => setSalesData({...salesData, sales_price: e.target.value})} />
                 </div>
                 <div className="form-row">
-                  <label>Cost Price $</label>
+                  <label>Cost Price ₹</label>
                   <input type="number" value={salesData.cost_price} onChange={(e) => setSalesData({...salesData, cost_price: e.target.value})} />
                 </div>
               </div>
@@ -417,7 +419,7 @@ const AddProduct = () => {
                       </select>
                     </div>
                     <div className="form-row">
-                      <label>Price for this Duration $</label>
+                      <label>Price for this Duration ₹</label>
                       <input type="number" value={plan.price} onChange={(e) => {
                         const newPlans = [...rentPlans];
                         newPlans[index].price = e.target.value;
@@ -443,7 +445,7 @@ const AddProduct = () => {
                   </div>
                   <div className="column" style={{marginTop: '2.5rem'}}>
                     <div className="form-row">
-                      <label>Late Fees $</label>
+                      <label>Late Fees ₹</label>
                       <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
                         <input type="number" style={{minWidth: '80px'}} value={plan.late_fees} onChange={(e) => {
                           const newPlans = [...rentPlans];
@@ -454,7 +456,7 @@ const AddProduct = () => {
                       </div>
                     </div>
                     <div className="form-row" style={{marginTop: '1rem'}}>
-                      <label>Security Deposit $</label>
+                      <label>Security Deposit ₹</label>
                       <input type="number" value={plan.security_deposit} onChange={(e) => {
                         const newPlans = [...rentPlans];
                         newPlans[index].security_deposit = e.target.value;

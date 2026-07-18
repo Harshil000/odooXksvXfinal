@@ -17,7 +17,7 @@ export function isInMonth(dateValue, monthValue) {
 }
 
 export function formatCurrency(amount) {
-  return `Rs ${Number(amount || 0).toLocaleString("en-IN", {
+  return `₹${Number(amount || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 0,
   })}`;
 }

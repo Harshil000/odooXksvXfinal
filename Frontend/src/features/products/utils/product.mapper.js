@@ -4,7 +4,7 @@ export function mapProductToCard(product) {
   return {
     id: product.p_id,
     image: product.image || FALLBACK_IMAGE,
-    price: `Rs ${product.sales_price || product.price || 0}`,
+    price: `₹${product.sales_price || product.price || 0}`,
     duration: "Month",
     colors: [],
     outOfStock: product.quantity <= 0,

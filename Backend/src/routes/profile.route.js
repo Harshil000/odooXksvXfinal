@@ -8,7 +8,8 @@ import {
   addAddressController,
   updateAddressController,
   deleteAddressController,
-  changePasswordController
+  changePasswordController,
+  getCompanyInfoController
 } from "../controller/profile.controller.js";
 import {
   updateProfileValidation,
@@ -23,6 +24,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 profileRoute.use(verifyToken);
 
 profileRoute.get("/", getProfileController);
+profileRoute.get("/company-info", getCompanyInfoController);
 profileRoute.put("/user", upload.single("profileImage"), updateProfileValidation, updateUserController);
 profileRoute.put("/company", verifyAdmin, upload.single("companyProfileImage"), updateCompanyValidation, updateCompanyController);
 profileRoute.put("/change-password", changePasswordValidation, changePasswordController);

@@ -8,7 +8,7 @@ import OrderDetailModal from "../components/OrderDetailModal";
 import "../styles/Dashboard.scss";
 
 function formatCurrency(amount) {
-  return `$${Number(amount || 0).toLocaleString("en-US", {
+  return `₹${Number(amount || 0).toLocaleString("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })}`;

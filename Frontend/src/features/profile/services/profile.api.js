@@ -43,3 +43,8 @@ export const changePassword = async (data) => {
     const response = await api.put("/profile/change-password", data);
     return response.data;
 };
+
+export const getCompanyInfo = async () => {
+    const response = await api.get("/profile/company-info");
+    return response.data;
+};

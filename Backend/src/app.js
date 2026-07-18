@@ -10,6 +10,7 @@ import rentPlanRoute from "./routes/rent_plan.route.js";
 import orderRoute from "./routes/order.route.js";
 import cartRoute from "./routes/cart.route.js";
 import paymentRoute from "./routes/payment.route.js";
+import deliveryRouteRoute from "./routes/deliveryRoute.route.js";
 import morgan from "morgan";
 
 const app = express();
@@ -57,6 +58,7 @@ app.use("/api/rent-plans", rentPlanRoute);
 app.use("/api/orders", orderRoute);
 app.use("/api/cart", cartRoute);
 app.use("/api/payment", paymentRoute);
+app.use("/api/delivery-routes", deliveryRouteRoute);
 app.use(handleError);
 
 export default app;

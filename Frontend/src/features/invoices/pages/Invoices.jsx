@@ -56,9 +56,7 @@ const Invoices = () => {
         <section className="invoice-card">
           <div className="invoice-topbar">
             <div className="invoice-topbar__left">
-              <button type="button" className="invoice-new-btn">New</button>
-              <button type="button" className="invoice-icon-btn">✓</button>
-              <button type="button" className="invoice-icon-btn invoice-icon-btn--danger">×</button>
+              <button type="button" className="invoice-new-btn">Invoices</button>
             </div>
           </div>
 
