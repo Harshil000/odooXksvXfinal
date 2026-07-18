@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const DEFAULT_DB_PATH = path.resolve(
   process.cwd(),
@@ -31,7 +32,7 @@ async function readStoreFile(filePath) {
     return JSON.parse(raw);
   } catch (error) {
     if (error.code === "ENOENT") {
-      return { users: [] };
+      return { users: [], vendors: [], companies: [] };
     }
     throw error;
   }
@@ -52,35 +53,35 @@ export async function initializeStore() {
   const data = await readStoreFile(currentDbPath);
   store = {
     users: Array.isArray(data.users) ? data.users : [],
+    vendors: Array.isArray(data.vendors) ? data.vendors : [],
+    companies: Array.isArray(data.companies) ? data.companies : [],
   };
   initialized = true;
   activeDbPath = currentDbPath;
   return store;
 }
 
-export async function createUserRecord({ full_name, email, password_hash }) {
-  await initializeStore();
+// ========================
+// USERS
+// ========================
 
+export async function createUserRecord({ first_name, last_name, profile_image, email, password_hash }) {
+  await initializeStore();
   const normalizedEmail = normalizeEmail(email);
-  const existingUser = store.users.find(
-    (user) => user.email === normalizedEmail,
-  );
+  const existingUser = store.users.find(u => u.email === normalizedEmail);
   if (existingUser) {
     const error = new Error("Email already exists");
     error.status = 409;
     throw error;
   }
-
   const createdUser = {
-    id: Date.now().toString(),
-    full_name: String(full_name || "").trim(),
+    u_id: crypto.randomUUID(),
+    first_name: String(first_name || "").trim(),
+    last_name: String(last_name || "").trim(),
+    profile_image,
     email: normalizedEmail,
-    password_hash,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    password: password_hash,
   };
-
   store.users.push(createdUser);
   await writeStoreFile(getDbPath(), store);
   return createdUser;
@@ -89,12 +90,79 @@ export async function createUserRecord({ full_name, email, password_hash }) {
 export async function findUserByEmail(email) {
   await initializeStore();
   const normalizedEmail = normalizeEmail(email);
-  return store.users.find((user) => user.email === normalizedEmail) || null;
+  return store.users.find(u => u.email === normalizedEmail) || null;
 }
 
-export async function findUserById(id) {
+export async function findUserById(u_id) {
   await initializeStore();
-  return store.users.find((user) => user.id === String(id)) || null;
+  return store.users.find(u => u.u_id === String(u_id)) || null;
+}
+
+// ========================
+// COMPANIES
+// ========================
+
+export async function createCompanyRecord({ product_category, comp_prof_image, gst_no, cname, pincode, city, state, address_line1, address_line2 }) {
+  await initializeStore();
+  const createdCompany = {
+    c_id: crypto.randomUUID(),
+    product_category,
+    comp_prof_image,
+    gst_no,
+    cname,
+    pincode,
+    city,
+    state,
+    address_line1,
+    address_line2,
+  };
+  store.companies.push(createdCompany);
+  await writeStoreFile(getDbPath(), store);
+  return createdCompany;
+}
+
+export async function findCompanyById(c_id) {
+  await initializeStore();
+  return store.companies.find(c => c.c_id === String(c_id)) || null;
+}
+
+// ========================
+// VENDORS
+// ========================
+
+export async function createVendorRecord({ first_name, last_name, profile_image, email, password_hash, c_id, role }) {
+  await initializeStore();
+  const normalizedEmail = normalizeEmail(email);
+  const existingVendor = store.vendors.find(v => v.email === normalizedEmail);
+  if (existingVendor) {
+    const error = new Error("Email already exists");
+    error.status = 409;
+    throw error;
+  }
+  const createdVendor = {
+    v_id: crypto.randomUUID(),
+    first_name: String(first_name || "").trim(),
+    last_name: String(last_name || "").trim(),
+    profile_image,
+    email: normalizedEmail,
+    password: password_hash,
+    c_id,
+    role,
+  };
+  store.vendors.push(createdVendor);
+  await writeStoreFile(getDbPath(), store);
+  return createdVendor;
+}
+
+export async function findVendorByEmail(email) {
+  await initializeStore();
+  const normalizedEmail = normalizeEmail(email);
+  return store.vendors.find(v => v.email === normalizedEmail) || null;
+}
+
+export async function findVendorById(v_id) {
+  await initializeStore();
+  return store.vendors.find(v => v.v_id === String(v_id)) || null;
 }
 
 export async function getStorePath() {
