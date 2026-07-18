@@ -197,6 +197,29 @@
                             border-color: rgba(255,255,255,0.2);
                         }
                     }
+
+                    .logout-btn {
+                        width: 100%;
+                        padding: 10px;
+                        border-radius: 8px;
+                        background: rgba(239, 68, 68, 0.08);
+                        border: 1px solid rgba(239, 68, 68, 0.2);
+                        color: #ef4444;
+                        font-size: 13px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        cursor: pointer;
+                        transition: background-color 0.2s, border-color 0.2s;
+                        margin-bottom: 12px;
+
+                        &:hover {
+                            background: rgba(239, 68, 68, 0.15);
+                            border-color: rgba(239, 68, 68, 0.35);
+                        }
+                    }
                 }
             }
         }
