@@ -10,6 +10,7 @@ import {
   INSERT_VENDOR_QUERY,
   SELECT_VENDOR_BY_EMAIL_QUERY,
   SELECT_VENDOR_BY_ID_QUERY,
+  UPDATE_VENDOR_PROFILE_QUERY,
 } from "../queries/user.query.js";
 
 // ========================
@@ -72,4 +73,13 @@ export async function findVendorById(id) {
   const pool = getPool();
   const result = await pool.query(SELECT_VENDOR_BY_ID_QUERY, [id]);
   return result.rows[0] || null;
+}
+
+export async function updateVendorProfile(v_id, { first_name, last_name, profile_image }) {
+  const mode = resolveDatabaseMode();
+  if (mode === "file") throw new Error("File mode for vendors not implemented");
+
+  const pool = getPool();
+  const result = await pool.query(UPDATE_VENDOR_PROFILE_QUERY, [first_name, last_name, profile_image, v_id]);
+  return result.rows[0];
 }

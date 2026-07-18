@@ -14,6 +14,8 @@ import {
   SELECT_USER_BY_ID_QUERY,
   INSERT_COMPANY_QUERY,
   SELECT_COMPANY_BY_ID_QUERY,
+  UPDATE_USER_PROFILE_QUERY,
+  UPDATE_COMPANY_PROFILE_QUERY,
 } from "../queries/user.query.js";
 
 // ========================
@@ -73,6 +75,15 @@ export async function findUserById(id) {
   return result.rows[0] || null;
 }
 
+export async function updateUserProfile(u_id, { first_name, last_name, profile_image }) {
+  const mode = resolveDatabaseMode();
+  if (mode === "file") throw new Error("File mode for users not implemented");
+
+  const pool = getPool();
+  const result = await pool.query(UPDATE_USER_PROFILE_QUERY, [first_name, last_name, profile_image, u_id]);
+  return result.rows[0];
+}
+
 // ========================
 // COMPANIES
 // ========================
@@ -118,4 +129,24 @@ export async function findCompanyById(id) {
   const pool = getPool();
   const result = await pool.query(SELECT_COMPANY_BY_ID_QUERY, [id]);
   return result.rows[0] || null;
+}
+
+export async function updateCompanyProfile(c_id, data) {
+  const mode = resolveDatabaseMode();
+  if (mode === "file") throw new Error("File mode for companies not implemented");
+
+  const pool = getPool();
+  const result = await pool.query(UPDATE_COMPANY_PROFILE_QUERY, [
+    data.cname,
+    data.product_category,
+    data.gst_no,
+    data.pincode,
+    data.city,
+    data.state,
+    data.address_line1,
+    data.address_line2 || null,
+    data.comp_prof_image || null,
+    c_id
+  ]);
+  return result.rows[0];
 }

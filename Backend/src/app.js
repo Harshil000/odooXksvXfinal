@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { handleError } from "./middleware/error.middleware.js";
 import authRoute from "./routes/auth.route.js";
+import profileRoute from "./routes/profile.route.js";
 import attributeRoute from "./routes/attribute.route.js";
 import morgan from "morgan";
 
@@ -44,6 +45,7 @@ app.use(morgan("dev"));
 // ROUTES
 // =========================
 app.use("/api/auth", authRoute);
+app.use("/api/profile", profileRoute);
 app.use("/api/attributes", attributeRoute);
 app.use(handleError);
 

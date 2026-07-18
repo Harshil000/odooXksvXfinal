@@ -39,7 +39,7 @@ function useAuth() {
       // Token is automatically managed by cookies
 
 
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       if (Array.isArray(error?.errors)) {
         error.errors.forEach((item) => {
@@ -68,7 +68,7 @@ function useAuth() {
       // Token is automatically managed by cookies
 
 
-      navigate("/");
+      navigate("/profile");
     } catch (error) {
       if (Array.isArray(error?.errors)) {
         error.errors.forEach((item) => {
