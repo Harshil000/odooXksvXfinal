@@ -284,17 +284,6 @@ const AddProduct = () => {
             <div className="flex-columns">
               <div className="column">
                 <div className="form-row">
-                  <label>Product Type</label>
-                  <div className="radio-group">
-                    <label>
-                      <input type="radio" name="type" checked={salesData.product_type === 'Goods'} onChange={() => setSalesData({...salesData, product_type: 'Goods'})}/> Goods
-                    </label>
-                    <label>
-                      <input type="radio" name="type" checked={salesData.product_type === 'Service'} onChange={() => setSalesData({...salesData, product_type: 'Service'})}/> Service
-                    </label>
-                  </div>
-                </div>
-                <div className="form-row">
                   <label>Quantity on Hand</label>
                   <input 
                     type="number" 
@@ -306,14 +295,6 @@ const AddProduct = () => {
                     }} 
                     min={isEditMode ? initialQty : 0}
                   />
-                </div>
-                <div className="form-row" style={{marginTop: '2rem'}}>
-                  <label>Sales Price ₹</label>
-                  <input type="number" value={salesData.sales_price} onChange={(e) => setSalesData({...salesData, sales_price: e.target.value})} />
-                </div>
-                <div className="form-row">
-                  <label>Cost Price ₹</label>
-                  <input type="number" value={salesData.cost_price} onChange={(e) => setSalesData({...salesData, cost_price: e.target.value})} />
                 </div>
               </div>
               <div className="column">
@@ -423,22 +404,6 @@ const AddProduct = () => {
                       <input type="number" value={plan.price} onChange={(e) => {
                         const newPlans = [...rentPlans];
                         newPlans[index].price = e.target.value;
-                        setRentPlans(newPlans);
-                      }} />
-                    </div>
-                    <div className="form-row">
-                      <label>Pickup</label>
-                      <input type="time" value={plan.pickup} onChange={(e) => {
-                        const newPlans = [...rentPlans];
-                        newPlans[index].pickup = e.target.value;
-                        setRentPlans(newPlans);
-                      }} />
-                    </div>
-                    <div className="form-row">
-                      <label>Return</label>
-                      <input type="time" value={plan.return} onChange={(e) => {
-                        const newPlans = [...rentPlans];
-                        newPlans[index].return = e.target.value;
                         setRentPlans(newPlans);
                       }} />
                     </div>
