@@ -14,7 +14,6 @@ const Register = () => {
         lastName: "",
         email: "",
         password: "",
-        industry: ""
     });
 
     const { RegisterUser } = useAuth();
@@ -35,7 +34,7 @@ const Register = () => {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
+                    <div className="form-row">
                         <div className="form-group" style={{ flex: 1 }}>
                             <div className="label-row"><label>First Name</label></div>
                             <div className="input-wrapper no-icon">
@@ -58,18 +57,10 @@ const Register = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
+                    <div className="form-row">
                         <div className="form-group" style={{ flex: 1 }}>
                             <div className="label-row"><label>Password</label></div>
                             <PasswordField onChange={handleChange} />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <div className="label-row"><label>Industry / Equipment Category Interests</label></div>
-                        <div className="input-wrapper">
-                            <div className="input-icon"><Wrench size={16} /></div>
-                            <input onChange={handleChange} type="text" name="industry" placeholder="e.g. Earthmoving, Aerial Lifts, Power Gen" />
                         </div>
                     </div>
 

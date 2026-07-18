@@ -3,28 +3,48 @@ import { Link } from "react-router"
 import { ToastContainer } from 'react-toastify';
 import useAuth from "../hook/useAuth"
 import PasswordField from "../components/PasswordField"
-import { Mail, Briefcase, Hash, Wrench, ArrowRight } from "lucide-react"
+import { Mail, Briefcase, Hash, Wrench, ArrowRight, UserCog } from "lucide-react"
 import "../styles/login.scss"
 
 const VendorRegister = () => {
     const { formValues, handleChange } = useForm({
         firstName: "",
         lastName: "",
+        role: "ADMIN",
         companyName: "",
         productCategory: "",
         gstNo: "",
+        companyUuid: "",
         email: "",
         password: ""
     });
 
-    const { VendorRegisterUser } = useAuth(); // Assume it exists or will be added
+    const { VendorRegisterUser } = useAuth(); // We'll assume it exists or will be added
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Filter payload based on role
+        const payload = {
+            firstName: formValues.firstName,
+            lastName: formValues.lastName,
+            email: formValues.email,
+            password: formValues.password,
+            role: formValues.role,
+        };
+
+        if (formValues.role === "ADMIN") {
+            payload.companyName = formValues.companyName;
+            payload.productCategory = formValues.productCategory;
+            payload.gstNo = formValues.gstNo;
+        } else if (formValues.role === "STAFF") {
+            payload.companyUuid = formValues.companyUuid;
+        }
+
         if (VendorRegisterUser) {
-            VendorRegisterUser(formValues);
+            VendorRegisterUser(payload);
         } else {
-            console.log("Vendor Register:", formValues);
+            console.log("Vendor Register:", payload);
         }
     }
 
@@ -38,7 +58,7 @@ const VendorRegister = () => {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
+                    <div className="form-row">
                         <div className="form-group" style={{ flex: 1 }}>
                             <div className="label-row"><label>First Name</label></div>
                             <div className="input-wrapper no-icon">
@@ -53,36 +73,61 @@ const VendorRegister = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
-                        <div className="form-group" style={{ flex: 1 }}>
-                            <div className="label-row"><label>Company Name</label></div>
-                            <div className="input-wrapper">
-                                <div className="input-icon"><Briefcase size={16} /></div>
-                                <input required onChange={handleChange} type="text" name="companyName" placeholder="Company Ltd." />
-                            </div>
-                        </div>
-                        <div className="form-group" style={{ flex: 1 }}>
-                            <div className="label-row"><label>Product Category</label></div>
-                            <div className="input-wrapper">
-                                <div className="input-icon"><Wrench size={16} /></div>
-                                <select required onChange={handleChange} name="productCategory">
-                                    <option value="" disabled selected>Select Category</option>
-                                    <option value="hardware">Hardware</option>
-                                    <option value="software">Software</option>
-                                    <option value="services">Services</option>
-                                    <option value="materials">Building Materials</option>
-                                </select>
-                            </div>
+                    <div className="form-group">
+                        <div className="label-row"><label>Registration Role</label></div>
+                        <div className="input-wrapper">
+                            <div className="input-icon"><UserCog size={16} /></div>
+                            <select required onChange={handleChange} name="role" value={formValues.role}>
+                                <option value="ADMIN">Company Admin</option>
+                                <option value="STAFF">Company Staff</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <div className="label-row"><label>GST No.</label></div>
-                        <div className="input-wrapper">
-                            <div className="input-icon"><Hash size={16} /></div>
-                            <input required onChange={handleChange} type="text" name="gstNo" placeholder="GSTIN..." />
+                    {formValues.role === "ADMIN" && (
+                        <>
+                            <div className="form-row">
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <div className="label-row"><label>Company Name</label></div>
+                                    <div className="input-wrapper">
+                                        <div className="input-icon"><Briefcase size={16} /></div>
+                                        <input required onChange={handleChange} type="text" name="companyName" placeholder="Company Ltd." />
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <div className="label-row"><label>Product Category</label></div>
+                                    <div className="input-wrapper">
+                                        <div className="input-icon"><Wrench size={16} /></div>
+                                        <select required onChange={handleChange} name="productCategory">
+                                            <option value="" disabled selected>Select Category</option>
+                                            <option value="hardware">Hardware</option>
+                                            <option value="software">Software</option>
+                                            <option value="services">Services</option>
+                                            <option value="materials">Building Materials</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <div className="label-row"><label>GST No.</label></div>
+                                <div className="input-wrapper">
+                                    <div className="input-icon"><Hash size={16} /></div>
+                                    <input required onChange={handleChange} type="text" name="gstNo" placeholder="GSTIN..." />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {formValues.role === "STAFF" && (
+                        <div className="form-group">
+                            <div className="label-row"><label>Company ID (UUID)</label></div>
+                            <div className="input-wrapper">
+                                <div className="input-icon"><Briefcase size={16} /></div>
+                                <input required onChange={handleChange} type="text" name="companyUuid" placeholder="Enter Company UUID" />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="form-group">
                         <div className="label-row"><label>Email Address</label></div>

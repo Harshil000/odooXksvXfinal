@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { AuthContext } from "../auth.context";
-import { register, login, logout } from "../services/auth.api";
+import { register, login, logout, vendorRegister } from "../services/auth.api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
 import { decodeToken } from "../utils/token.util";
@@ -113,7 +113,41 @@ function useAuth() {
     }
   }
 
-  return { RegisterUser, LoginUser, LogoutUser, user };
+  async function VendorRegisterUser(payload) {
+    try {
+      setLoading(true);
+
+      const response = await vendorRegister(payload);
+      console.log("✅ Vendor Registration Response:", response);
+      setUser(response.user);
+
+      // Decode token 
+      const token = getTokenFromCookie();
+      if (token) {
+        const decoded = decodeToken(token);
+        if (decoded?.company_id) {
+          console.log("✅ Registered - Company ID:", decoded.company_id);
+        }
+      }
+
+      navigate("/");
+    } catch (error) {
+      if (Array.isArray(error?.errors)) {
+        error.errors.forEach((item) => {
+          if (item?.msg) {
+            toast.error(item.msg);
+          }
+        });
+      } else {
+        toast.error(error?.message || "Vendor Registration failed");
+      }
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { RegisterUser, VendorRegisterUser, LoginUser, LogoutUser, user };
 }
 
 export default useAuth;
