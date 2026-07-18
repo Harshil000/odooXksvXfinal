@@ -26,18 +26,12 @@ export function registerValidation(req, res, next) {
     errors.push({ msg: "Password must be at least 6 characters long" });
   }
 
-  // If registering a vendor, either c_id or complete company details are required
+  // If registering a vendor, c_id is strictly required
   if (role === "vendor" || role === "admin") {
-    const { c_id, cname, gst_no, product_category, pincode, city, state, address_line1 } = req.body;
+    const { c_id } = req.body;
     
     if (!c_id) {
-      if (!cname || !cname.trim()) errors.push({ msg: "Company name is required for vendor registration if not providing c_id" });
-      if (!gst_no || !gst_no.trim()) errors.push({ msg: "GST number is required for vendor registration if not providing c_id" });
-      if (!product_category || !product_category.trim()) errors.push({ msg: "Product category is required for vendor registration if not providing c_id" });
-      if (!pincode || !pincode.trim()) errors.push({ msg: "Pincode is required for vendor registration if not providing c_id" });
-      if (!city || !city.trim()) errors.push({ msg: "City is required for vendor registration if not providing c_id" });
-      if (!state || !state.trim()) errors.push({ msg: "State is required for vendor registration if not providing c_id" });
-      if (!address_line1 || !address_line1.trim()) errors.push({ msg: "Address line 1 is required for vendor registration if not providing c_id" });
+      errors.push({ msg: "Company ID (c_id) is required for vendor registration" });
     }
   }
 

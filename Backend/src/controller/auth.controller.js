@@ -1,4 +1,4 @@
-import { createUser, createCompany, findUserById } from "../repository/user.repository.js";
+import { createUser, createCompany, findUserById, findCompanyById } from "../repository/user.repository.js";
 import { createVendor, findVendorById } from "../repository/vendor.repository.js";
 import { authenticateUser } from "../service/auth.service.js";
 import { issueAccessToken } from "../utils/token.util.js";
@@ -31,24 +31,14 @@ export async function registerController(req, res, next) {
       userType = "vendor";
       let c_id = req.body.c_id;
 
-      // If no company ID is provided, but company details are given, create the company first
-      if (!c_id && req.body.cname && req.body.gst_no && req.body.product_category) {
-        const company = await createCompany({
-          product_category: req.body.product_category,
-          comp_prof_image: req.body.comp_prof_image,
-          gst_no: req.body.gst_no,
-          cname: req.body.cname,
-          pincode: req.body.pincode,
-          city: req.body.city,
-          state: req.body.state,
-          address_line1: req.body.address_line1,
-          address_line2: req.body.address_line2,
-        });
-        c_id = company.c_id;
+      if (!c_id) {
+        return res.status(400).json({ message: "Company ID (c_id) is required to register a vendor" });
       }
 
-      if (!c_id) {
-        return res.status(400).json({ message: "A company ID or complete company details are required to register a vendor" });
+      // Verify if the company actually exists
+      const company = await findCompanyById(c_id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found. You must provide a valid registered company ID." });
       }
 
       registeredEntity = await createVendor({
