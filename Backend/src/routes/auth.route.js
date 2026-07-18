@@ -13,5 +13,6 @@ authRoute.get('/me', verifyToken, authController.getMeController)
 authRoute.get('/logout', authController.logoutController)
 authRoute.post('/forgot-password', authController.forgotPasswordController)
 authRoute.post('/reset-password', authController.resetPasswordController)
+authRoute.get('/companies/search', authController.searchCompaniesController)
 
 export default authRoute;

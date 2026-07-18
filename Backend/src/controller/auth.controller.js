@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { createUser, createCompany, findUserById, findCompanyById, findUserByEmail, updateUserPassword } from "../repository/user.repository.js";
-import { createVendor, findVendorById, findVendorByEmail, updateVendorPassword } from "../repository/vendor.repository.js";
+import { createVendor, findVendorById, findVendorByEmail, updateVendorPassword, searchCompaniesByName } from "../repository/vendor.repository.js";
 import { authenticateUser } from "../service/auth.service.js";
 import { issueAccessToken } from "../utils/token.util.js";
 import { getAccessCookieOptions, getClearCookieOptions } from "../utils/cookie.util.js";
@@ -289,6 +289,23 @@ export async function resetPasswordController(req, res, next) {
     await deletePasswordResetByEmail(resetRecord.email);
 
     return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Searches for companies by name query for staff registration dropdown list.
+ * GET /api/auth/companies/search
+ */
+export async function searchCompaniesController(req, res, next) {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(200).json({ companies: [] });
+    }
+    const companies = await searchCompaniesByName(q.trim());
+    return res.status(200).json({ companies });
   } catch (error) {
     next(error);
   }

@@ -71,3 +71,10 @@ SET cname = $1, product_category = $2, gst_no = $3, pincode = $4, city = $5, sta
 WHERE c_id = $10
 RETURNING c_id, product_category, comp_prof_image, gst_no, cname, pincode, city, state, address_line1, address_line2;
 `;
+
+export const SELECT_COMPANIES_BY_NAME_QUERY = `
+SELECT c_id, cname, gst_no
+FROM company
+WHERE cname ILIKE $1
+LIMIT 10;
+`;
