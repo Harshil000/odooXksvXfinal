@@ -68,7 +68,7 @@ export const PublicRoute = ({ children }) => {
  * - Redirects logged-in vendors (admin/staff) to '/dashboard'.
  */
 export const StorefrontRoute = ({ children }) => {
-  const { user, checkingAuth } = useContext(AuthContext);
+  const { checkingAuth } = useContext(AuthContext);
 
   if (checkingAuth) {
     return (
@@ -77,13 +77,6 @@ export const StorefrontRoute = ({ children }) => {
         <p className="guard-loading-text">Verifying session...</p>
       </div>
     );
-  }
-
-  if (user) {
-    const isVendor = !!(user.role || user.v_id || user.c_id);
-    if (isVendor) {
-      return <Navigate to="/dashboard" replace />;
-    }
   }
 
   return children;
