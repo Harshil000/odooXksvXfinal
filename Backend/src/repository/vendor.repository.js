@@ -1,11 +1,5 @@
 import argon2 from "argon2";
 import { getPool } from "../config/database.js";
-import { resolveDatabaseMode } from "../database/dbMode.js";
-import {
-  createVendorRecord,
-  findVendorByEmail as findVendorByEmailFromStore,
-  findVendorById as findVendorByIdFromStore,
-} from "../database/fileStore.js";
 import {
   INSERT_VENDOR_QUERY,
   SELECT_VENDOR_BY_EMAIL_QUERY,
@@ -17,22 +11,8 @@ import {
 // ========================
 
 export async function createVendor({ first_name, last_name, profile_image, email, password, c_id, role }) {
-  const mode = resolveDatabaseMode();
   const passwordHash = await argon2.hash(password);
   const vendorRole = role === "admin" ? "admin" : "vendor";
-
-  if (mode === "file") {
-    const createdVendor = await createVendorRecord({
-      first_name,
-      last_name,
-      profile_image,
-      email,
-      password_hash: passwordHash,
-      c_id,
-      role: vendorRole,
-    });
-    return createdVendor;
-  }
 
   const pool = getPool();
   try {
@@ -57,18 +37,12 @@ export async function createVendor({ first_name, last_name, profile_image, email
 }
 
 export async function findVendorByEmail(email) {
-  const mode = resolveDatabaseMode();
-  if (mode === "file") return findVendorByEmailFromStore(email);
-  
   const pool = getPool();
   const result = await pool.query(SELECT_VENDOR_BY_EMAIL_QUERY, [email]);
   return result.rows[0] || null;
 }
 
 export async function findVendorById(id) {
-  const mode = resolveDatabaseMode();
-  if (mode === "file") return findVendorByIdFromStore(id);
-  
   const pool = getPool();
   const result = await pool.query(SELECT_VENDOR_BY_ID_QUERY, [id]);
   return result.rows[0] || null;
