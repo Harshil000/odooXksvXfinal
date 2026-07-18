@@ -65,6 +65,13 @@ const Navbar = ({
         </a>
         <a
           href="#"
+          className={`nav-link ${activeSection === "quotation" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); navigate("/dashboard/new-order"); }}
+        >
+          Quotation
+        </a>
+        <a
+          href="#"
           className={`nav-link ${activeSection === "schedule" ? "active" : ""}`}
           onClick={(e) => { e.preventDefault(); navigate("/schedule"); }}
         >
@@ -77,8 +84,21 @@ const Navbar = ({
         >
           Assets
         </a>
+        <a
+          href="#"
+          className={`nav-link ${activeSection === "invoices" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); navigate("/invoices"); }}
+        >
+          Invoices
+        </a>
         <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); navigate("/"); }}>Products</a>
-        <a href="#" className="nav-link">Reports</a>
+        <a
+          href="#"
+          className={`nav-link ${activeSection === "reports" ? "active" : ""}`}
+          onClick={(e) => { e.preventDefault(); navigate("/reports"); }}
+        >
+          Reports
+        </a>
         <a href="#" className="nav-link">Settings</a>
       </div>
 

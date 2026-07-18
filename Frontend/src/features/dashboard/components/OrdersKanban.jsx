@@ -25,8 +25,10 @@ const COLUMNS = [
   { id: "cancelled", label: "Cancelled", statuses: ["cancelled"] },
 ];
 
-const OrdersKanban = ({ orders = [], onStatusUpdate }) => {
+const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
   const [updatingId, setUpdatingId] = useState(null);
+  const [draggedOrder, setDraggedOrder] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -42,6 +44,41 @@ const OrdersKanban = ({ orders = [], onStatusUpdate }) => {
     }
   };
 
+  const handleDragStart = (event, order) => {
+    if (updatingId === order.id) {
+      event.preventDefault();
+      return;
+    }
+
+    setDraggedOrder(order);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(order.id));
+  };
+
+  const handleDragEnd = () => {
+    setDraggedOrder(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (event, columnId) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverColumn(columnId);
+  };
+
+  const handleDrop = async (event, newStatus) => {
+    event.preventDefault();
+    setDragOverColumn(null);
+
+    if (!draggedOrder || draggedOrder.status === newStatus) {
+      setDraggedOrder(null);
+      return;
+    }
+
+    await handleStatusChange(draggedOrder.id, newStatus);
+    setDraggedOrder(null);
+  };
+
   // Group orders by columns
   const columnsData = COLUMNS.map((col) => {
     const colOrders = orders.filter((o) => col.statuses.includes(o.status));
@@ -51,7 +88,14 @@ const OrdersKanban = ({ orders = [], onStatusUpdate }) => {
   return (
     <div className="orders-kanban-board">
       {columnsData.map((col) => (
-        <div key={col.id} className="kanban-column" id={`kanban-column-${col.id}`}>
+        <div
+          key={col.id}
+          className={`kanban-column ${dragOverColumn === col.id ? "is-drag-over" : ""}`}
+          id={`kanban-column-${col.id}`}
+          onDragOver={(event) => handleDragOver(event, col.id)}
+          onDragLeave={() => setDragOverColumn(null)}
+          onDrop={(event) => handleDrop(event, col.id)}
+        >
           <div className="kanban-column-header">
             <h3>{col.label}</h3>
             <span className="column-count-badge">{col.orders.length}</span>
@@ -64,7 +108,13 @@ const OrdersKanban = ({ orders = [], onStatusUpdate }) => {
               col.orders.map((order) => (
                 <div
                   key={order.id}
-                  className={`kanban-card ${updatingId === order.id ? "card-updating" : ""}`}
+                  className={`kanban-card ${updatingId === order.id ? "card-updating" : ""} ${
+                    draggedOrder?.id === order.id ? "is-dragging" : ""
+                  }`}
+                  draggable={updatingId !== order.id}
+                  onDragStart={(event) => handleDragStart(event, order)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => onCardClick && onCardClick(order)}
                 >
                   <div className="card-header">
                     <span className="order-ref">{order.orderRef}</span>
@@ -97,12 +147,34 @@ const OrdersKanban = ({ orders = [], onStatusUpdate }) => {
                         <span className="date-value">{formatDate(order.returnDate)}</span>
                       </div>
                     </div>
+
+                    {order.penalty > 0 && (
+                      <div 
+                        className="late-penalty-warning"
+                        style={{
+                          marginTop: "8px",
+                          padding: "4px 8px",
+                          backgroundColor: "#fef2f2",
+                          border: "1px solid #fee2e2",
+                          borderRadius: "4px",
+                          color: "#ef4444",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        <span role="img" aria-label="warning">⚠️</span>
+                        Late Penalty: {formatCurrency(order.penalty)}
+                      </div>
+                    )}
                   </div>
 
                   <div className="card-footer">
                     <StatusBadge status={order.invoiceStatus} />
 
-                    <div className="status-selector-wrapper">
+                    <div className="status-selector-wrapper" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={order.status}
                         disabled={updatingId === order.id}

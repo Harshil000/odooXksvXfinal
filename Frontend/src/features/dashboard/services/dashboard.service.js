@@ -19,7 +19,7 @@ function mapOrderToRow(order) {
     returnTime: order.return_time,
     total: Number(order.total) || 0,
     deposit: Number(order.deposit) || 0,
-    penalty: Number(order.penalty) || 0,
+    penalty: Number(order.calculated_penalty) || 0,
     productName: order.product_name,
     durationType: order.duration_type,
     createdAt: order.created_at,

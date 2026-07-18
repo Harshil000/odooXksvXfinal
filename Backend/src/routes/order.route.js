@@ -7,6 +7,8 @@ import {
   updateOrderStatusController,
   deleteOrderController,
   getDashboardOrdersController,
+  sendInvoiceController,
+  getCustomerDetailsController,
 } from "../controller/order.controller.js";
 
 const orderRoute = Router();
@@ -15,8 +17,14 @@ const orderRoute = Router();
 // RENTING ORDERS
 // ==========================================
 
+// Search customer by email
+orderRoute.get("/customer/search", verifyToken, getCustomerDetailsController);
+
 // Dashboard enriched orders (any authenticated vendor)
 orderRoute.get("/dashboard", verifyToken, getDashboardOrdersController);
+
+// Send invoice email to customer
+orderRoute.post("/invoice/send", verifyAdmin, sendInvoiceController);
 
 // Get all orders (open to all authenticated users - could be restricted later)
 orderRoute.get("/", verifyToken, getAllOrdersController);
