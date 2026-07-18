@@ -209,6 +209,22 @@
         padding: 0.5rem 0;
         outline: none;
         min-width: 200px;
+        color-scheme: dark;
+      }
+
+      select {
+        background-color: var(--bg-secondary);
+
+        option {
+          background-color: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+
+        option:checked,
+        option:hover {
+          background-color: var(--accent);
+          color: #000;
+        }
       }
       
       .radio-group {

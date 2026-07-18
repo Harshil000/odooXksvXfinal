@@ -1,7 +1,23 @@
 export const INSERT_ADDRESS_QUERY = `
-INSERT INTO addresses (pincode, state, city, address_line1, address_line2, u_id)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING address_id, pincode, state, city, address_line1, address_line2, u_id;
+WITH s AS (
+  SELECT address_id, pincode, state, city, address_line1, address_line2, u_id
+  FROM addresses
+  WHERE pincode = $1 
+    AND state = $2 
+    AND city = $3 
+    AND address_line1 = $4 
+    AND COALESCE(address_line2, '') = COALESCE($5, '') 
+    AND (u_id = $6 OR (u_id IS NULL AND $6 IS NULL))
+  LIMIT 1
+), i AS (
+  INSERT INTO addresses (pincode, state, city, address_line1, address_line2, u_id)
+  SELECT $1, $2, $3, $4, $5, $6
+  WHERE NOT EXISTS (SELECT 1 FROM s)
+  RETURNING address_id, pincode, state, city, address_line1, address_line2, u_id
+)
+SELECT address_id, pincode, state, city, address_line1, address_line2, u_id FROM i
+UNION ALL
+SELECT address_id, pincode, state, city, address_line1, address_line2, u_id FROM s;
 `;
 
 export const SELECT_ADDRESSES_BY_USER_ID_QUERY = `
