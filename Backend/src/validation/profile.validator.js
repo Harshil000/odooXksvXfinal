@@ -43,3 +43,31 @@ export function addressValidation(req, res, next) {
   }
   next();
 }
+
+export function changePasswordValidation(req, res, next) {
+  const { password, confirmPassword } = req.body;
+  const errors = [];
+
+  if (!password) {
+    errors.push({ msg: "Password is required" });
+  } else {
+    if (password.length < 6 || password.length > 12) {
+      errors.push({ msg: "Password must be 6-12 characters long" });
+    }
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+      errors.push({ msg: "Password must contain both uppercase and lowercase letters" });
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      errors.push({ msg: "Password must contain at least one special character" });
+    }
+  }
+
+  if (password !== confirmPassword) {
+    errors.push({ msg: "Passwords must match" });
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ message: "Validation failed", errors });
+  }
+  next();
+}

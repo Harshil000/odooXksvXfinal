@@ -3,6 +3,7 @@ import Login from "./features/auth/pages/Login";
 import Register from "./features/auth/pages/Register";
 import VendorRegister from "./features/auth/pages/VendorRegister";
 import Profile from "./features/profile/pages/Profile";
+import ChangePassword from "./features/profile/pages/ChangePassword";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
   {
     path: "/profile",
     element: <Profile/>
+  },
+  {
+    path: "/change-password",
+    element: <ChangePassword />
   }
 ]);
 

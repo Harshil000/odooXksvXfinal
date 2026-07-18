@@ -5,6 +5,9 @@ import {
   createVendorRecord,
   findVendorByEmail as findVendorByEmailFromStore,
   findVendorById as findVendorByIdFromStore,
+  initializeStore,
+  getStore,
+  saveStore,
 } from "../database/fileStore.js";
 import {
   INSERT_VENDOR_QUERY,
@@ -81,5 +84,30 @@ export async function updateVendorProfile(v_id, { first_name, last_name, profile
 
   const pool = getPool();
   const result = await pool.query(UPDATE_VENDOR_PROFILE_QUERY, [first_name, last_name, profile_image, v_id]);
+  return result.rows[0];
+}
+
+export async function updateVendorPassword(v_id, newPassword) {
+  const mode = resolveDatabaseMode();
+  const passwordHash = await argon2.hash(newPassword);
+
+  if (mode === "file") {
+    await initializeStore();
+    const store = getStore();
+    const vendor = store.vendors.find((v) => v.v_id === String(v_id));
+    if (!vendor) throw new Error("Vendor not found");
+    vendor.password = passwordHash;
+    await saveStore();
+    return vendor;
+  }
+
+  const pool = getPool();
+  const query = `
+    UPDATE vendors
+    SET password = $1
+    WHERE v_id = $2
+    RETURNING v_id, first_name, last_name, email, c_id, role;
+  `;
+  const result = await pool.query(query, [passwordHash, v_id]);
   return result.rows[0];
 }

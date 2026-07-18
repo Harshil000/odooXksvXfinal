@@ -38,3 +38,8 @@ export const deleteAddress = async (id) => {
     const response = await api.delete(`/profile/address/${id}`);
     return response.data;
 };
+
+export const changePassword = async (data) => {
+    const response = await api.put("/profile/change-password", data);
+    return response.data;
+};

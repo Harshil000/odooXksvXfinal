@@ -7,12 +7,14 @@ import {
   updateCompanyController,
   addAddressController,
   updateAddressController,
-  deleteAddressController
+  deleteAddressController,
+  changePasswordController
 } from "../controller/profile.controller.js";
 import {
   updateProfileValidation,
   updateCompanyValidation,
-  addressValidation
+  addressValidation,
+  changePasswordValidation
 } from "../validation/profile.validator.js";
 
 const profileRoute = Router();
@@ -23,6 +25,7 @@ profileRoute.use(verifyToken);
 profileRoute.get("/", getProfileController);
 profileRoute.put("/user", upload.single("profileImage"), updateProfileValidation, updateUserController);
 profileRoute.put("/company", verifyAdmin, upload.single("companyProfileImage"), updateCompanyValidation, updateCompanyController);
+profileRoute.put("/change-password", changePasswordValidation, changePasswordController);
 
 profileRoute.post("/address", addressValidation, addAddressController);
 profileRoute.put("/address/:id", addressValidation, updateAddressController);
