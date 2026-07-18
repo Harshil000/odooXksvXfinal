@@ -11,5 +11,7 @@ authRoute.post('/staff/register', authValidator.staffRegisterValidation, authCon
 authRoute.post('/login', authValidator.loginValidation, authController.loginController)
 authRoute.get('/me', verifyToken, authController.getMeController)
 authRoute.get('/logout', authController.logoutController)
+authRoute.post('/forgot-password', authController.forgotPasswordController)
+authRoute.post('/reset-password', authController.resetPasswordController)
 
 export default authRoute;

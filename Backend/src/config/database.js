@@ -10,6 +10,16 @@ const connectDB = async () => {
   pool = new Pool({ connectionString });
   await pool.query("SELECT 1");
   console.log("PostgreSQL connected");
+  
+  // Create password_resets table if it doesn't exist
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      email VARCHAR(255) PRIMARY KEY,
+      token VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 };
 
 export const getPool = () => pool;

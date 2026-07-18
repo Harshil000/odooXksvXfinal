@@ -55,3 +55,21 @@ export async function logout() {
     throw getErrorPayload(error, "Logout failed");
   }
 }
+
+export async function forgotPassword(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/forgot-password`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Request failed");
+  }
+}
+
+export async function resetPassword(data) {
+  try {
+    const response = await httpClient.post(`${AUTH_BASE}/reset-password`, data);
+    return response.data;
+  } catch (error) {
+    throw getErrorPayload(error, "Password reset failed");
+  }
+}

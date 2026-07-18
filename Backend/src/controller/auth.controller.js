@@ -1,8 +1,11 @@
-import { createUser, createCompany, findUserById, findCompanyById } from "../repository/user.repository.js";
-import { createVendor, findVendorById } from "../repository/vendor.repository.js";
+import crypto from "crypto";
+import { createUser, createCompany, findUserById, findCompanyById, findUserByEmail, updateUserPassword } from "../repository/user.repository.js";
+import { createVendor, findVendorById, findVendorByEmail, updateVendorPassword } from "../repository/vendor.repository.js";
 import { authenticateUser } from "../service/auth.service.js";
 import { issueAccessToken } from "../utils/token.util.js";
 import { getAccessCookieOptions, getClearCookieOptions } from "../utils/cookie.util.js";
+import { upsertPasswordReset, findPasswordResetByToken, deletePasswordResetByEmail } from "../repository/passwordReset.repository.js";
+import { sendEmail } from "../service/mail.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: build the JWT payload from user object
@@ -190,4 +193,103 @@ export async function getMeController(req, res, next) {
 export async function logoutController(req, res) {
   res.clearCookie("accessToken", getClearCookieOptions());
   return res.status(200).json({ message: "Logged out successfully" });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/forgot-password
+// ─────────────────────────────────────────────────────────────────────────────
+export async function forgotPasswordController(req, res, next) {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // 1. Check if user or vendor exists
+    const user = await findUserByEmail(email);
+    const vendor = await findVendorByEmail(email);
+    if (!user && !vendor) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    // 2. Generate a secure token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour expiration
+
+    // 3. Upsert into password_resets
+    await upsertPasswordReset(email, token, expiresAt);
+
+    // 4. Send email
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetLink = `${frontendUrl}/forgot-password?token=${token}`;
+
+    const mailText = `You requested a password reset. Please click on the link below to reset your password:\n\n${resetLink}\n\nThis link will expire in 1 hour.`;
+    const mailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #6366f1;">Password Reset Request</h2>
+        <p>You requested a password reset for your account. Click the button below to choose a new password:</p>
+        <div style="margin: 24px 0;">
+          <a href="${resetLink}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        <p style="color: #64748b; font-size: 14px;">Or copy and paste this URL into your browser:</p>
+        <p style="color: #64748b; font-size: 14px; word-break: break-all;">${resetLink}</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="color: #94a3b8; font-size: 12px;">If you did not request this, you can safely ignore this email.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: "Password Reset Request",
+      text: mailText,
+      html: mailHtml,
+    });
+
+    return res.status(200).json({ message: "Password reset email sent successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/reset-password
+// ─────────────────────────────────────────────────────────────────────────────
+export async function resetPasswordController(req, res, next) {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token and password are required" });
+  }
+
+  try {
+    // 1. Find the reset record
+    const resetRecord = await findPasswordResetByToken(token);
+    if (!resetRecord) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // 2. Check expiration
+    if (new Date(resetRecord.expires_at) < new Date()) {
+      await deletePasswordResetByEmail(resetRecord.email);
+      return res.status(400).json({ message: "Token has expired" });
+    }
+
+    // 3. Find if user or vendor
+    const user = await findUserByEmail(resetRecord.email);
+    const vendor = await findVendorByEmail(resetRecord.email);
+
+    if (user) {
+      await updateUserPassword(user.u_id, password);
+    } else if (vendor) {
+      await updateVendorPassword(vendor.v_id, password);
+    } else {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    // 4. Delete the token so it cannot be reused
+    await deletePasswordResetByEmail(resetRecord.email);
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    next(error);
+  }
 }
