@@ -38,7 +38,7 @@ const Home = () => {
     };
   }, [hasMore, loading, loadMore]);
 
-  const { user } = useContext(AuthContext);
+  const { user, showProductFilters } = useContext(AuthContext);
   const isAdmin = user && (user.role === 'admin' || user.role === 'ADMIN');
 
   const handleDeleteProduct = async (e, p_id) => {
@@ -100,28 +100,30 @@ const Home = () => {
 
       <div className="main-content">
         {/* Sidebar Filters */}
-        <aside className="sidebar">
-          {Object.keys(groupedFilters).map(attrName => (
-            <div className="filter-group" key={attrName}>
-              <label>{attrName}</label>
-              <select 
-                value={selectedFilters[attrName] || 'All'}
-                onChange={(e) => setSelectedFilters({
-                  ...selectedFilters,
-                  [attrName]: e.target.value
-                })}
-              >
-                <option value="All">All</option>
-                {groupedFilters[attrName].map(val => (
-                  <option key={val} value={val}>{val}</option>
-                ))}
-              </select>
-            </div>
-          ))}
-          {Object.keys(groupedFilters).length === 0 && (
-            <p className="no-filters-msg" style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>No attributes to filter.</p>
-          )}
-        </aside>
+        {showProductFilters && (
+          <aside className="sidebar">
+            {Object.keys(groupedFilters).map(attrName => (
+              <div className="filter-group" key={attrName}>
+                <label>{attrName}</label>
+                <select 
+                  value={selectedFilters[attrName] || 'All'}
+                  onChange={(e) => setSelectedFilters({
+                    ...selectedFilters,
+                    [attrName]: e.target.value
+                  })}
+                >
+                  <option value="All">All</option>
+                  {groupedFilters[attrName].map(val => (
+                    <option key={val} value={val}>{val}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            {Object.keys(groupedFilters).length === 0 && (
+              <p className="no-filters-msg" style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>No attributes to filter.</p>
+            )}
+          </aside>
+        )}
 
         {/* Product Grid */}
         <main className="products-area">
