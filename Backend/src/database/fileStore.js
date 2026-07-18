@@ -32,7 +32,10 @@ async function readStoreFile(filePath) {
     return JSON.parse(raw);
   } catch (error) {
     if (error.code === "ENOENT") {
-      return { users: [], vendors: [], companies: [] };
+      return { 
+        users: [], vendors: [], companies: [],
+        attributes: [], attribute_keys: [], attribute_values: []
+      };
     }
     throw error;
   }
@@ -55,10 +58,21 @@ export async function initializeStore() {
     users: Array.isArray(data.users) ? data.users : [],
     vendors: Array.isArray(data.vendors) ? data.vendors : [],
     companies: Array.isArray(data.companies) ? data.companies : [],
+    attributes: Array.isArray(data.attributes) ? data.attributes : [],
+    attribute_keys: Array.isArray(data.attribute_keys) ? data.attribute_keys : [],
+    attribute_values: Array.isArray(data.attribute_values) ? data.attribute_values : [],
   };
   initialized = true;
   activeDbPath = currentDbPath;
   return store;
+}
+
+export function getStore() {
+  return store;
+}
+
+export async function saveStore() {
+  await writeStoreFile(getDbPath(), store);
 }
 
 // ========================

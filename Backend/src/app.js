@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { handleError } from "./middleware/error.middleware.js";
 import authRoute from "./routes/auth.route.js";
+import attributeRoute from "./routes/attribute.route.js";
 import morgan from "morgan";
 
 const app = express();
@@ -43,9 +44,7 @@ app.use(morgan("dev"));
 // ROUTES
 // =========================
 app.use("/api/auth", authRoute);
-
-
-
+app.use("/api/attributes", attributeRoute);
 app.use(handleError);
 
 export default app;
