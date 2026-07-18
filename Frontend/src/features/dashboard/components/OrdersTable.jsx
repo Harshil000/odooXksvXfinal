@@ -34,7 +34,7 @@ function formatCurrency(amount) {
   })}`;
 }
 
-const OrdersTable = ({ orders = [] }) => {
+const OrdersTable = ({ orders = [], onRowClick }) => {
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   const allSelected =
@@ -91,6 +91,7 @@ const OrdersTable = ({ orders = [] }) => {
             <th>Status</th>
             <th>Pickup Date</th>
             <th>Return Date</th>
+            <th className="col-number">Penalty</th>
             <th className="col-number">Total</th>
             <th>Invoice Status</th>
           </tr>
@@ -100,8 +101,10 @@ const OrdersTable = ({ orders = [] }) => {
             <tr
               key={order.id}
               className={selectedIds.has(order.id) ? "row-selected" : ""}
+              onClick={() => onRowClick && onRowClick(order)}
+              style={{ cursor: "pointer" }}
             >
-              <td className="col-checkbox">
+              <td className="col-checkbox" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="checkbox"
                   checked={selectedIds.has(order.id)}
@@ -120,6 +123,15 @@ const OrdersTable = ({ orders = [] }) => {
               </td>
               <td className="col-date">
                 {formatDateTime(order.returnDate, order.returnTime)}
+              </td>
+              <td 
+                className="col-number" 
+                style={{ 
+                  color: order.penalty > 0 ? "#ef4444" : "inherit", 
+                  fontWeight: order.penalty > 0 ? "600" : "normal" 
+                }}
+              >
+                {order.penalty > 0 ? formatCurrency(order.penalty) : "—"}
               </td>
               <td className="col-number">{formatCurrency(order.total)}</td>
               <td>

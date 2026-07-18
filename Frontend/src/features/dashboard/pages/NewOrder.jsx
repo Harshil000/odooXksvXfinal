@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import httpClient from "../../../shared/api/httpClient";
 import { getProducts, getProductAssets, createProductAsset } from "../../products/api/product.api";
 import { getRentPlansByProduct } from "../../rentPlans/api/rentPlan.api";
 import { createRentingOrder } from "../api/dashboard.api";
@@ -12,6 +13,7 @@ const NewOrder = () => {
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [rentPlans, setRentPlans] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [assets, setAssets] = useState([]);
@@ -24,6 +26,8 @@ const NewOrder = () => {
 
   // Form State
   const [email, setEmail] = useState("");
+  const [isRentalOrder, setIsRentalOrder] = useState(true);
+  const [statusStage, setStatusStage] = useState("Quotation"); // "Quotation", "Quotation Sent", "Sale Order"
   const [startDate, setStartDate] = useState(() => {
     const date = searchParams.get("start_date");
     return date ? `${date}T09:00` : "";
@@ -33,9 +37,27 @@ const NewOrder = () => {
     return date ? `${date}T18:00` : "";
   });
   const [deliveryStatus, setDeliveryStatus] = useState("reserved");
-  const [invoiceStatus, setInvoiceStatus] = useState("nothing_to_invoice");
-  const [total, setTotal] = useState(0);
-  const [isManualTotal, setIsManualTotal] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  // Customer & Address State
+  const [customerExists, setCustomerExists] = useState(false);
+  const [customerAddresses, setCustomerAddresses] = useState([]);
+  const [invoiceAddressId, setInvoiceAddressId] = useState("custom");
+  const [deliveryAddressId, setDeliveryAddressId] = useState("custom");
+  const [customInvoiceAddress, setCustomInvoiceAddress] = useState({
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    pincode: ""
+  });
+  const [customDeliveryAddress, setCustomDeliveryAddress] = useState({
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    pincode: ""
+  });
 
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -56,6 +78,42 @@ const NewOrder = () => {
     loadProductsList();
   }, []);
 
+  // Fetch addresses when customer email is updated
+  useEffect(() => {
+    if (!email || !email.includes("@")) {
+      setCustomerExists(false);
+      setCustomerAddresses([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const response = await httpClient.get(`/orders/customer/search?email=${encodeURIComponent(email)}`);
+        if (response.data && response.data.exists) {
+          setCustomerExists(true);
+          const addrs = response.data.addresses || [];
+          setCustomerAddresses(addrs);
+          if (addrs.length > 0) {
+            setInvoiceAddressId(addrs[0].address_id);
+            setDeliveryAddressId(addrs[0].address_id);
+          } else {
+            setInvoiceAddressId("custom");
+            setDeliveryAddressId("custom");
+          }
+        } else {
+          setCustomerExists(false);
+          setCustomerAddresses([]);
+          setInvoiceAddressId("custom");
+          setDeliveryAddressId("custom");
+        }
+      } catch (err) {
+        console.error("Error looking up customer addresses:", err);
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounce);
+  }, [email]);
+
   // Load plans & assets when selected product changes
   useEffect(() => {
     if (!selectedProduct) {
@@ -65,15 +123,25 @@ const NewOrder = () => {
     async function loadDetails() {
       try {
         setLoadingDetails(true);
-        // Fetch plans
         const plansResponse = await getRentPlansByProduct(selectedProduct);
-        setRentPlans(plansResponse.plans || []);
+        const plans = plansResponse.plans || [];
+        setRentPlans(plans);
+        if (plans.length > 0) {
+          setSelectedPlanId(plans[0].r_id);
+        } else {
+          setSelectedPlanId("");
+        }
         
-        // Fetch assets
         const assetsResponse = await getProductAssets(selectedProduct);
-        setAssets(assetsResponse.assets || []);
+        const fetchedAssets = assetsResponse.assets || [];
+        setAssets(fetchedAssets);
+        if (fetchedAssets.length > 0) {
+          setSelectedAssetId(fetchedAssets[0].asset_id);
+        } else {
+          setSelectedAssetId("");
+        }
       } catch (err) {
-        console.error("Failed to load product rent details:", err);
+        console.error("Failed to load product details:", err);
       } finally {
         setLoadingDetails(false);
       }
@@ -82,17 +150,26 @@ const NewOrder = () => {
     loadDetails();
   }, [selectedProduct]);
 
-  const calculatedTotal = useMemo(() => {
-    const plan = rentPlans.find((p) => p.r_id === selectedPlanId);
-    if (!plan || !startDate || !endDate) {
-      return 0;
-    }
+  const selectedPlan = useMemo(() => {
+    return rentPlans.find((p) => p.r_id === selectedPlanId) || null;
+  }, [selectedPlanId, rentPlans]);
 
-    const { total: calculated } = calculateRentalTotal(startDate, endDate, plan);
-    return calculated;
-  }, [startDate, endDate, selectedPlanId, rentPlans]);
+  const durationInfo = useMemo(() => {
+    if (!selectedPlan || !startDate || !endDate) return { total: 0, durationLabel: "0 periods" };
+    return calculateRentalTotal(startDate, endDate, selectedPlan);
+  }, [startDate, endDate, selectedPlan]);
 
-  const orderTotal = isManualTotal ? total : calculatedTotal;
+  const untaxedAmount = useMemo(() => {
+    return durationInfo.total * quantity;
+  }, [durationInfo, quantity]);
+
+  const taxAmount = useMemo(() => {
+    return untaxedAmount * 0.10;
+  }, [untaxedAmount]);
+
+  const totalAmount = useMemo(() => {
+    return untaxedAmount + taxAmount;
+  }, [untaxedAmount, taxAmount]);
 
   const handleProductChange = (productId) => {
     setSelectedProduct(productId);
@@ -123,322 +200,499 @@ const NewOrder = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const executeSave = async (targetStage) => {
+    if (!selectedProduct) return alert("Please select a Product.");
     if (!selectedPlanId) return alert("Please select a Rental Plan.");
-    if (!selectedAssetId) return alert("Please assign an Asset.");
     if (!email) return alert("Please enter Customer Email.");
     if (!startDate || !endDate) return alert("Please specify start and end dates.");
     if (new Date(endDate) <= new Date(startDate)) return alert("End date must be after Start date.");
 
+    // Validate custom addresses if selected
+    if (invoiceAddressId === "custom") {
+      if (!customInvoiceAddress.address_line1 || !customInvoiceAddress.city || !customInvoiceAddress.state || !customInvoiceAddress.pincode) {
+        return alert("Please complete the custom Invoice Address details.");
+      }
+    }
+    if (deliveryAddressId === "custom") {
+      if (!customDeliveryAddress.address_line1 || !customDeliveryAddress.city || !customDeliveryAddress.state || !customDeliveryAddress.pincode) {
+        return alert("Please complete the custom Delivery Address details.");
+      }
+    }
+
     try {
       setSaving(true);
+
+      let finalAssetId = selectedAssetId;
+      if (!finalAssetId) {
+        // Auto-create asset QR if none exists
+        const qrCode = `${selectedProductDetails?.pname || "product"}-auto-${Date.now().toString().slice(-4)}`;
+        const response = await createProductAsset(selectedProduct, qrCode);
+        finalAssetId = response.asset.asset_id;
+        setSelectedAssetId(finalAssetId);
+      }
+
+      let invoice_status = "nothing_to_invoice";
+      if (targetStage === "Quotation Sent") {
+        invoice_status = "quotation_sent";
+      } else if (targetStage === "Sale Order") {
+        invoice_status = "confirmed";
+      }
+
       const payload = {
         r_id: selectedPlanId,
-        asset_id: selectedAssetId,
+        asset_id: finalAssetId,
         email,
         start_date: new Date(startDate).toISOString(),
         end_date: new Date(endDate).toISOString(),
         delivery_status: deliveryStatus,
-        invoice_status: invoiceStatus,
-        total: Number(orderTotal),
+        invoice_status,
+        total: Number(totalAmount.toFixed(2)),
+        invoice_address_id: invoiceAddressId !== "custom" ? invoiceAddressId : null,
+        delivery_address_id: deliveryAddressId !== "custom" ? deliveryAddressId : null,
+        invoiceAddress: invoiceAddressId === "custom" ? {
+          addressLine1: customInvoiceAddress.address_line1,
+          addressLine2: customInvoiceAddress.address_line2,
+          city: customInvoiceAddress.city,
+          state: customInvoiceAddress.state,
+          pincode: customInvoiceAddress.pincode
+        } : null,
+        deliveryAddress: deliveryAddressId === "custom" ? {
+          addressLine1: customDeliveryAddress.address_line1,
+          addressLine2: customDeliveryAddress.address_line2,
+          city: customDeliveryAddress.city,
+          state: customDeliveryAddress.state,
+          pincode: customDeliveryAddress.pincode
+        } : null,
       };
 
       await createRentingOrder(payload);
-      alert("Rental order created successfully!");
-      navigate(searchParams.get("from") === "schedule" ? "/schedule" : "/dashboard");
+      alert(`Order saved successfully as ${targetStage}!`);
+      const backPath = searchParams.get("from") === "schedule" ? "/schedule" : "/dashboard";
+      navigate(backPath);
     } catch (err) {
       console.error(err);
-      alert("Failed to create renting order: " + (err.message || err));
+      alert("Failed to save renting order: " + (err.message || err));
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedPlan = rentPlans.find((p) => p.r_id === selectedPlanId);
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const selectedProductDetails = useMemo(() => {
+    return products.find((p) => p.p_id === selectedProduct) || null;
+  }, [selectedProduct, products]);
+
+  const formattedPeriodLabel = useMemo(() => {
+    if (!startDate || !endDate) return "";
+    const startStr = new Date(startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const endStr = new Date(endDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `${startStr} -> ${endStr}`;
+  }, [startDate, endDate]);
+
   const backPath = searchParams.get("from") === "schedule" ? "/schedule" : "/dashboard";
 
   return (
     <div className="new-order-page">
-      <Navbar activeSection={backPath === "/schedule" ? "schedule" : "orders"} searchQuery="" onSearchChange={() => {}} />
+      <Navbar activeSection="quotation" searchQuery="" onSearchChange={() => {}} />
 
       <div className="new-order-content">
-        <form onSubmit={handleSave} className="new-order-form">
+        <div className="new-order-form">
           {/* Header Action Row */}
           <div className="form-header-row">
             <div className="title-area">
               <span className="back-link" onClick={() => navigate(backPath)}>
-                ← Back to Dashboard
+                ← Back
               </span>
-              <h2>Create Rental Order</h2>
+              <div className="rental-order-toggle">
+                <button type="button" className="btn-new-badge">New</button>
+                <label className="rental-label-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={isRentalOrder}
+                    onChange={(e) => setIsRentalOrder(e.target.checked)}
+                  />
+                  <span>Rental order</span>
+                  {isRentalOrder ? (
+                    <span className="check-icon-green" title="Confirmed Rental Mode">✔️</span>
+                  ) : (
+                    <span className="check-icon-red" title="Draft / Custom Mode">❌</span>
+                  )}
+                </label>
+              </div>
             </div>
+
+            <div className="stages-progress-bar">
+              <div className={`stage-step ${statusStage === "Quotation" ? "active" : ""}`} onClick={() => setStatusStage("Quotation")}>
+                Quotation
+              </div>
+              <div className={`stage-step ${statusStage === "Quotation Sent" ? "active" : ""}`} onClick={() => setStatusStage("Quotation Sent")}>
+                Quotation Sent
+              </div>
+              <div className={`stage-step ${statusStage === "Sale Order" ? "active" : ""}`} onClick={() => setStatusStage("Sale Order")}>
+                Sale Order
+              </div>
+            </div>
+          </div>
+
+          <div className="sub-actions-row">
             <div className="action-buttons">
               <button 
                 type="button" 
-                className="btn-cancel" 
-                onClick={() => navigate(backPath)}
+                className="btn-send"
+                onClick={() => {
+                  setStatusStage("Quotation Sent");
+                  executeSave("Quotation Sent");
+                }}
                 disabled={saving}
               >
-                Discard
+                Send
               </button>
               <button 
-                type="submit" 
-                className="btn-save" 
-                disabled={saving || loadingProducts || loadingDetails}
+                type="button" 
+                className="btn-confirm"
+                onClick={() => {
+                  setStatusStage("Sale Order");
+                  executeSave("Sale Order");
+                }}
+                disabled={saving}
               >
-                {saving ? "Creating..." : "Save Order"}
+                Confirm
+              </button>
+              <button 
+                type="button" 
+                className="btn-print"
+                onClick={handlePrint}
+              >
+                Print
               </button>
             </div>
           </div>
 
-          <div className="form-grid">
-            {/* Left Column: Customer & Product Info */}
-            <div className="form-card-column">
-              <div className="form-card-section">
-                <h3>Customer Details</h3>
-                <div className="form-group">
-                  <label htmlFor="customer-email">Customer Email *</label>
+          <div className="order-sheet">
+            <h1 className="order-ref-title">SO00075</h1>
+
+            <div className="form-grid">
+              {/* Left Column: Customer and Addresses */}
+              <div className="form-column">
+                <div className="form-group row-align">
+                  <label>Customer</label>
                   <input
                     type="email"
-                    id="customer-email"
                     required
                     placeholder="e.g. customer@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="form-card-section">
-                <h3>Product & Rental Plan</h3>
-                <div className="form-group">
-                  <label htmlFor="product-select">Select Product *</label>
-                  {loadingProducts ? (
-                    <div className="select-loading">Loading products list...</div>
-                  ) : (
-                    <select
-                      id="product-select"
-                      required
-                      value={selectedProduct}
-                      onChange={(e) => handleProductChange(e.target.value)}
-                    >
-                      <option value="">-- Choose a Product --</option>
-                      {products.map((p) => (
-                        <option key={p.p_id} value={p.p_id}>
-                          {p.pname} ({p.product_type})
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                {/* Invoice Address */}
+                <div className="form-group row-align">
+                  <label>Invoice Address</label>
+                  <select
+                    value={invoiceAddressId}
+                    onChange={(e) => setInvoiceAddressId(e.target.value)}
+                  >
+                    {customerAddresses.map((a) => (
+                      <option key={a.address_id} value={a.address_id}>
+                        {a.address_line1}, {a.city} ({a.pincode})
+                      </option>
+                    ))}
+                    <option value="custom">-- New Custom Address --</option>
+                  </select>
                 </div>
 
-                {selectedProduct && (
-                  <div className="form-group">
-                    <label htmlFor="plan-select">Rental Plan *</label>
-                    {loadingDetails ? (
-                      <div className="select-loading">Loading rent plans...</div>
-                    ) : rentPlans.length === 0 ? (
-                      <div className="error-note">No rental plans configured for this product. Configure one first.</div>
-                    ) : (
-                      <select
-                        id="plan-select"
+                {invoiceAddressId === "custom" && (
+                  <div className="custom-address-block">
+                    <input
+                      type="text"
+                      placeholder="Address Line 1"
+                      required
+                      value={customInvoiceAddress.address_line1}
+                      onChange={(e) => setCustomInvoiceAddress({...customInvoiceAddress, address_line1: e.target.value})}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Address Line 2 (Optional)"
+                      value={customInvoiceAddress.address_line2}
+                      onChange={(e) => setCustomInvoiceAddress({...customInvoiceAddress, address_line2: e.target.value})}
+                    />
+                    <div className="address-subfields">
+                      <input
+                        type="text"
+                        placeholder="City"
                         required
-                        value={selectedPlanId}
-                        onChange={(e) => setSelectedPlanId(e.target.value)}
-                      >
-                        <option value="">-- Choose a Rental Plan --</option>
-                        {rentPlans.map((rp) => (
-                          <option key={rp.r_id} value={rp.r_id}>
-                            ${Number(rp.price)} per {rp.duration_type} (Deposit: ${Number(rp.deposit)})
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                        value={customInvoiceAddress.city}
+                        onChange={(e) => setCustomInvoiceAddress({...customInvoiceAddress, city: e.target.value})}
+                      />
+                      <input
+                        type="text"
+                        placeholder="State"
+                        required
+                        value={customInvoiceAddress.state}
+                        onChange={(e) => setCustomInvoiceAddress({...customInvoiceAddress, state: e.target.value})}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Pincode"
+                        required
+                        value={customInvoiceAddress.pincode}
+                        onChange={(e) => setCustomInvoiceAddress({...customInvoiceAddress, pincode: e.target.value})}
+                      />
+                    </div>
                   </div>
                 )}
 
-                {selectedPlan && (
-                  <div className="plan-summary-box">
-                    <div className="summary-item">
-                      <span>Rate:</span> <strong>${Number(selectedPlan.price)} / {selectedPlan.duration_type}</strong>
+                {/* Delivery Address */}
+                <div className="form-group row-align">
+                  <label>Delivery Address</label>
+                  <select
+                    value={deliveryAddressId}
+                    onChange={(e) => setDeliveryAddressId(e.target.value)}
+                  >
+                    {customerAddresses.map((a) => (
+                      <option key={a.address_id} value={a.address_id}>
+                        {a.address_line1}, {a.city} ({a.pincode})
+                      </option>
+                    ))}
+                    <option value="custom">-- New Custom Address --</option>
+                  </select>
+                </div>
+
+                {deliveryAddressId === "custom" && (
+                  <div className="custom-address-block">
+                    <input
+                      type="text"
+                      placeholder="Address Line 1"
+                      required
+                      value={customDeliveryAddress.address_line1}
+                      onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, address_line1: e.target.value})}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Address Line 2 (Optional)"
+                      value={customDeliveryAddress.address_line2}
+                      onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, address_line2: e.target.value})}
+                    />
+                    <div className="address-subfields">
+                      <input
+                        type="text"
+                        placeholder="City"
+                        required
+                        value={customDeliveryAddress.city}
+                        onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, city: e.target.value})}
+                      />
+                      <input
+                        type="text"
+                        placeholder="State"
+                        required
+                        value={customDeliveryAddress.state}
+                        onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, state: e.target.value})}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Pincode"
+                        required
+                        value={customDeliveryAddress.pincode}
+                        onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, pincode: e.target.value})}
+                      />
                     </div>
-                    <div className="summary-item">
-                      <span>Security Deposit:</span> <strong>${Number(selectedPlan.deposit)}</strong>
-                    </div>
-                    <div className="summary-item">
-                      <span>Late Penalty Rate:</span> <strong>${Number(selectedPlan.penalty)} / period</strong>
-                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Dates & Rent Plans Table */}
+              <div className="form-column">
+                <div className="form-group row-align">
+                  <label>Start Date</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group row-align">
+                  <label>End Date</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+
+                {/* Delivery Status */}
+                <div className="form-group row-align">
+                  <label>Delivery Status</label>
+                  <select
+                    value={deliveryStatus}
+                    onChange={(e) => setDeliveryStatus(e.target.value)}
+                  >
+                    <option value="reserved">Reserved</option>
+                    <option value="picked_up">Picked Up</option>
+                    <option value="returned">Returned</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Rent Plans Table - shown only after product is selected */}
+                {selectedProduct && (
+                  <div className="rent-plans-table-section">
+                    <h4>Rent Plans for Selected Product</h4>
+                    {loadingDetails ? (
+                      <div className="table-loading">Loading plans...</div>
+                    ) : rentPlans.length === 0 ? (
+                      <div className="table-empty">No plans configured for this product.</div>
+                    ) : (
+                      <table className="plans-table">
+                        <thead>
+                          <tr>
+                            <th>Select</th>
+                            <th>Price</th>
+                            <th>Period</th>
+                            <th>Deposit</th>
+                            <th>Penalty</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rentPlans.map((rp) => (
+                            <tr 
+                              key={rp.r_id} 
+                              className={selectedPlanId === rp.r_id ? "selected-row" : ""}
+                              onClick={() => setSelectedPlanId(rp.r_id)}
+                            >
+                              <td>
+                                <input
+                                  type="radio"
+                                  name="rent-plan"
+                                  checked={selectedPlanId === rp.r_id}
+                                  onChange={() => setSelectedPlanId(rp.r_id)}
+                                />
+                              </td>
+                              <td>${Number(rp.price)}</td>
+                              <td>{rp.duration_type}</td>
+                              <td>${Number(rp.deposit)}</td>
+                              <td>${Number(rp.penalty)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Column: Dates, Pricing & Asset Assignment */}
-            <div className="form-card-column">
-              <div className="form-card-section">
-                <h3>Rental Dates & Pricing</h3>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="start-date">Start Date & Time *</label>
-                    <input
-                      type="datetime-local"
-                      id="start-date"
-                      required
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="end-date">End Date & Time *</label>
-                    <input
-                      type="datetime-local"
-                      id="end-date"
-                      required
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="delivery-status">Delivery Status</label>
-                    <select
-                      id="delivery-status"
-                      value={deliveryStatus}
-                      onChange={(e) => setDeliveryStatus(e.target.value)}
-                    >
-                      <option value="reserved">Reserved</option>
-                      <option value="picked_up">Picked Up</option>
-                      <option value="returned">Returned</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="invoice-status">Invoice Status</label>
-                    <select
-                      id="invoice-status"
-                      value={invoiceStatus}
-                      onChange={(e) => setInvoiceStatus(e.target.value)}
-                    >
-                      <option value="nothing_to_invoice">Nothing to Invoice</option>
-                      <option value="quotation_sent">Quotation Sent</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="invoiced">Invoiced</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="total-calculation-area">
-                  <div className="total-label-row">
-                    <label htmlFor="total-amount">Total Amount ($)</label>
-                    {isManualTotal && (
-                      <span className="reset-autocalc" onClick={() => setIsManualTotal(false)}>
-                        ↻ Reset to Auto-calc
-                      </span>
-                    )}
-                  </div>
-                  <div className="total-input-wrapper">
-                    <input
-                      type="number"
-                      id="total-amount"
-                      min="0"
-                      step="0.01"
-                      value={orderTotal}
-                      onChange={(e) => {
-                        setIsManualTotal(true);
-                        setTotal(Number(e.target.value));
-                      }}
-                    />
-                    <span className="total-calc-hint">
-                      {isManualTotal ? "Manual override active" : "Auto-calculated price"}
-                    </span>
-                  </div>
-                </div>
+            {/* Order Lines Tab Section */}
+            <div className="order-lines-section">
+              <div className="tabs-bar">
+                <span className="tab-title active">Order Line</span>
               </div>
 
-              <div className="form-card-section">
-                <h3>Asset Assignment</h3>
-                {selectedProduct ? (
-                  <>
-                    <div className="form-group">
-                      <label htmlFor="asset-select">Assign Asset Item *</label>
-                      {loadingDetails ? (
-                        <div className="select-loading">Loading assets list...</div>
-                      ) : assets.length === 0 ? (
-                        <div className="empty-assets-note">
-                          <span>No assets registered for this product.</span>
-                          <button
-                            type="button"
-                            className="btn-quick-asset"
-                            onClick={() => setShowAssetInput(true)}
-                          >
-                            + Register Asset QR
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="asset-selector-row">
+              <table className="order-lines-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Unit Price</th>
+                    <th>Taxes</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedProduct ? (
+                    <tr>
+                      <td className="product-details-cell">
+                        <strong>{selectedProductDetails?.pname}</strong>
+                        {formattedPeriodLabel && (
+                          <span className="period-span"> [{formattedPeriodLabel}]</span>
+                        )}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="1"
+                          className="qty-input"
+                          value={quantity}
+                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                        />
+                      </td>
+                      <td>Units</td>
+                      <td>
+                        {selectedPlan ? `$${Number(selectedPlan.price)}` : "No plan selected"}
+                      </td>
+                      <td>10%</td>
+                      <td>
+                        ${untaxedAmount.toFixed(2)}
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {/* Add a Product Option row */}
+                  {(!selectedProduct || showProductDropdown) && (
+                    <tr>
+                      <td colSpan="6" className="product-select-inline-row">
+                        <label>Choose Product: </label>
+                        {loadingProducts ? (
+                          <span>Loading products...</span>
+                        ) : (
                           <select
-                            id="asset-select"
-                            required
-                            value={selectedAssetId}
-                            onChange={(e) => setSelectedAssetId(e.target.value)}
+                            value={selectedProduct}
+                            onChange={(e) => {
+                              handleProductChange(e.target.value);
+                              setShowProductDropdown(false);
+                            }}
                           >
-                            <option value="">-- Choose Asset Item --</option>
-                            {assets.map((a) => (
-                              <option key={a.asset_id} value={a.asset_id}>
-                                {a.qr}
+                            <option value="">-- Choose a Product --</option>
+                            {products.map((p) => (
+                              <option key={p.p_id} value={p.p_id}>
+                                {p.pname} ({p.product_type})
                               </option>
                             ))}
                           </select>
-                          <button
-                            type="button"
-                            className="btn-quick-asset-small"
-                            onClick={() => setShowAssetInput(true)}
-                            title="Add new asset"
-                          >
-                            +
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
 
-                    {showAssetInput && (
-                      <div className="quick-asset-input-box">
-                        <h4>Register New Asset Item</h4>
-                        <div className="asset-input-row">
-                          <input
-                            type="text"
-                            placeholder="e.g. QR-00124 (Leave blank for auto-gen)"
-                            value={newAssetQr}
-                            onChange={(e) => setNewAssetQr(e.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="btn-save-asset"
-                            disabled={assetLoading}
-                            onClick={handleCreateAsset}
-                          >
-                            {assetLoading ? "Registering..." : "Add"}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-cancel-asset"
-                            onClick={() => setShowAssetInput(false)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="info-note">Please select a product first to view or register assets.</div>
-                )}
-              </div>
+                  {!selectedProduct && !showProductDropdown && (
+                    <tr>
+                      <td colSpan="6" className="add-product-row">
+                        <span className="add-product-btn" onClick={() => setShowProductDropdown(true)}>
+                          Add a Product
+                        </span>
+                        <span className="add-note-btn">Add a note</span>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Total Summary Breakdown */}
+              {selectedProduct && (
+                <div className="order-totals-breakdown">
+                  <div className="total-row">
+                    <span>Untaxed Amount:</span>
+                    <strong>${untaxedAmount.toFixed(2)}</strong>
+                  </div>
+                  <div className="total-row">
+                    <span>Taxes (10%):</span>
+                    <strong>${taxAmount.toFixed(2)}</strong>
+                  </div>
+                  <div className="total-row grand-total">
+                    <span>Total:</span>
+                    <strong>${totalAmount.toFixed(2)}</strong>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

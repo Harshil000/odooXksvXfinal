@@ -1,21 +1,21 @@
 // =========================================================
-// NEW ORDER PAGE STYLES
+// NEW ORDER PAGE STYLES (QUOTATION PAGE)
 // =========================================================
 
-// Color variables mapped from dashboard
 $bg-page: #0b0b0e;
-$bg-card: #14141a;
+$bg-card: #111116;
+$bg-soft: #15151c;
 $bg-input: #0f0f14;
 $border-color: #27272a;
 $border-light: #1f1f24;
 
-$accent: #cda4ff;
-$accent-hover: #b886ff;
-$accent-green: #22c55e;
-$accent-green-hover: #1ab252;
+$accent: #c084fc;
+$accent-hover: #a855f7;
+$accent-green: #34d399;
+$accent-green-hover: #10b981;
 $text-primary: #ffffff;
 $text-secondary: #a1a1aa;
-$text-muted: #52525b;
+$text-muted: #71717a;
 
 $radius: 6px;
 $radius-lg: 10px;
@@ -38,419 +38,659 @@ $transition: all 0.2s ease;
 .new-order-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
+// ─── Header Action Row ──────────────────────────────────
 .form-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid $border-color;
-  padding-bottom: 16px;
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
 
   .title-area {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 16px;
 
     .back-link {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
-      color: $accent;
+      color: $text-secondary;
       cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
       transition: $transition;
 
       &:hover {
-        color: $accent-hover;
+        color: $text-primary;
       }
     }
 
-    h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: $text-primary;
-      margin: 0;
-      letter-spacing: -0.5px;
+    .rental-order-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .btn-new-badge {
+        background: #1e1b4b;
+        color: #c084fc;
+        border: 1px solid rgba(192, 132, 252, 0.2);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .rental-label-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        color: $text-secondary;
+        user-select: none;
+
+        input {
+          width: 15px;
+          height: 15px;
+          cursor: pointer;
+          accent-color: $accent;
+        }
+
+        .check-icon-green {
+          font-size: 11px;
+          color: $accent-green;
+        }
+        .check-icon-red {
+          font-size: 11px;
+          color: #ef4444;
+        }
+      }
     }
   }
 
-  .action-buttons {
+  .stages-progress-bar {
     display: flex;
-    gap: 12px;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    background: $bg-soft;
+    overflow: hidden;
 
-    .btn-cancel {
-      padding: 9px 20px;
-      background: transparent;
-      border: 1px solid $border-color;
-      border-radius: $radius-pill;
-      color: $text-secondary;
-      font-size: 13px;
+    .stage-step {
+      padding: 6px 16px;
+      font-size: 12px;
       font-weight: 600;
-      font-family: inherit;
+      color: $text-muted;
       cursor: pointer;
       transition: $transition;
+      border-right: 1px solid $border-color;
+      user-select: none;
 
-      &:hover {
-        border-color: $text-muted;
-        color: $text-primary;
-        background: rgba(255, 255, 255, 0.02);
+      &:last-child {
+        border-right: none;
       }
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+      &:hover {
+        background: rgba(255, 255, 255, 0.02);
+        color: $text-secondary;
+      }
+
+      &.active {
+        background: #1e1b4b;
+        color: $accent;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+.sub-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  padding: 10px 16px;
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+
+    button {
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      border: 1px solid $border-color;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: $transition;
+    }
+
+    .btn-send {
+      background: #1e1b4b;
+      color: $accent;
+      border-color: rgba(192, 132, 252, 0.2);
+
+      &:hover {
+        background: #2e1065;
       }
     }
 
-    .btn-save {
-      padding: 9px 24px;
+    .btn-confirm {
       background: $accent-green;
+      color: #0c0a09;
       border: none;
-      border-radius: $radius-pill;
-      color: #000;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      transition: $transition;
 
       &:hover {
         background: $accent-green-hover;
-        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
       }
     }
+
+    .btn-print {
+      background: $bg-soft;
+      color: $text-secondary;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.03);
+        color: $text-primary;
+      }
+    }
+  }
+}
+
+// ─── Order Sheet Box ────────────────────────────────────
+.order-sheet {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+
+  .order-ref-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 20px;
+    color: $text-primary;
   }
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 32px;
 
-  @media (max-width: 900px) {
+  @media (max-width: 850px) {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
-.form-card-column {
+.form-column {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-.form-card-section {
-  background: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: $radius-lg;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-
-  h3 {
-    font-size: 15px;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0 0 4px 0;
-    border-left: 3px solid $accent;
-    padding-left: 10px;
-    line-height: 1.2;
-  }
+  gap: 14px;
 }
 
 .form-group {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 
-  label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: $text-secondary;
+  &.row-align {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: $text-secondary;
+    }
   }
 
-  input,
-  select {
-    width: 100%;
-    padding: 10px 14px;
+  input, select {
+    padding: 8px 12px;
     background: $bg-input;
     border: 1px solid $border-color;
-    border-radius: $radius;
+    border-radius: 4px;
     color: $text-primary;
     font-size: 13px;
     font-family: inherit;
     transition: $transition;
-    box-sizing: border-box;
-
-    &::placeholder {
-      color: $text-muted;
-    }
+    outline: none;
 
     &:focus {
-      outline: none;
       border-color: $accent;
-      box-shadow: 0 0 0 2px rgba(163, 140, 245, 0.1);
     }
   }
-
-  .select-loading {
-    padding: 10px 14px;
-    background: $bg-input;
-    border: 1px dashed $border-color;
-    border-radius: $radius;
-    color: $text-muted;
-    font-size: 13px;
-  }
-
-  .error-note {
-    font-size: 12px;
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.05);
-    border: 1px solid rgba(248, 113, 113, 0.15);
-    padding: 10px 12px;
-    border-radius: $radius;
-  }
 }
 
-.form-row {
-  display: flex;
-  gap: 16px;
-
-  .form-group {
-    flex: 1;
-  }
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 16px;
-  }
-}
-
-.plan-summary-box {
-  background: rgba(163, 140, 245, 0.04);
-  border: 1px solid rgba(163, 140, 245, 0.15);
-  border-radius: $radius;
-  padding: 14px;
+.custom-address-block {
+  margin-left: 140px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 4px;
+  padding: 12px;
+  background: $bg-soft;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  animation: slideDown 0.15s ease;
 
-  .summary-item {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: $text-secondary;
-
-    strong {
-      color: $text-primary;
-    }
-  }
-}
-
-.total-calculation-area {
-  border-top: 1px solid $border-light;
-  padding-top: 16px;
-  margin-top: 8px;
-
-  .total-label-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: $text-secondary;
-    }
-
-    .reset-autocalc {
-      font-size: 11px;
-      font-weight: 600;
-      color: $accent;
-      cursor: pointer;
-      user-select: none;
-      transition: $transition;
-
-      &:hover {
-        color: $accent-hover;
-      }
-    }
-  }
-
-  .total-input-wrapper {
-    position: relative;
-    margin-top: 6px;
-
-    input {
-      font-size: 18px;
-      font-weight: 700;
-      color: $accent-green;
-      padding-right: 120px;
-    }
-
-    .total-calc-hint {
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 11px;
-      color: $text-muted;
-      font-weight: 500;
-    }
-  }
-}
-
-.empty-assets-note {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 16px;
-  background: rgba(239, 68, 68, 0.03);
-  border: 1px dashed rgba(239, 68, 68, 0.15);
-  border-radius: $radius;
-  text-align: center;
-  font-size: 12px;
-  color: $text-secondary;
-
-  .btn-quick-asset {
-    padding: 6px 14px;
-    background: $accent;
-    border: none;
-    border-radius: $radius-pill;
-    color: #000;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: $transition;
-
-    &:hover {
-      background: $accent-hover;
-    }
-  }
-}
-
-.asset-selector-row {
-  display: flex;
-  gap: 12px;
-
-  select {
-    flex: 1;
-  }
-
-  .btn-quick-asset-small {
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  input {
+    padding: 6px 10px;
     background: $bg-input;
     border: 1px solid $border-color;
-    border-radius: $radius;
-    color: $text-secondary;
-    font-size: 18px;
-    cursor: pointer;
-    transition: $transition;
-    flex-shrink: 0;
+    border-radius: 4px;
+    color: $text-primary;
+    font-size: 12px;
+  }
 
-    &:hover {
-      border-color: $text-muted;
-      color: $text-primary;
-      background: rgba(255, 255, 255, 0.02);
-    }
+  .address-subfields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
   }
 }
 
-.quick-asset-input-box {
-  background: $bg-input;
+// ─── Rent Plans Table ───────────────────────────────────
+.rent-plans-table-section {
+  background: $bg-soft;
   border: 1px solid $border-color;
-  border-radius: $radius;
+  border-radius: 6px;
   padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
-  animation: slideDown 0.2s ease;
+  margin-top: 14px;
 
   h4 {
+    margin: 0 0 10px;
     font-size: 12px;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-muted;
   }
 
-  .asset-input-row {
-    display: flex;
-    gap: 8px;
+  .plans-table {
+    width: 100%;
+    border-collapse: collapse;
 
-    input {
-      flex: 1;
-      padding: 6px 10px;
+    th, td {
+      padding: 6px 8px;
       font-size: 12px;
+      text-align: left;
+      border-bottom: 1px solid $border-light;
     }
 
-    button {
-      padding: 6px 14px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: $radius;
-      cursor: pointer;
-      font-family: inherit;
-      transition: $transition;
-    }
-
-    .btn-save-asset {
-      background: $accent-green;
-      border: none;
-      color: #000;
-
-      &:hover {
-        background: $accent-green-hover;
-      }
-    }
-
-    .btn-cancel-asset {
-      background: transparent;
-      border: 1px solid $border-color;
+    th {
       color: $text-secondary;
+      font-weight: 600;
+    }
+
+    tr {
+      cursor: pointer;
+      transition: $transition;
 
       &:hover {
-        border-color: $text-muted;
-        color: $text-primary;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      &.selected-row {
+        background: rgba(192, 132, 252, 0.06);
+        td {
+          color: $accent;
+          font-weight: 600;
+        }
       }
     }
   }
 }
 
-.info-note {
-  font-size: 12px;
-  color: $text-muted;
-  text-align: center;
-  padding: 12px;
-  border: 1px dashed $border-color;
-  border-radius: $radius;
+// ─── Order Lines Section ────────────────────────────────
+.order-lines-section {
+  margin-top: 30px;
+
+  .tabs-bar {
+    border-bottom: 2px solid $border-color;
+    margin-bottom: 12px;
+
+    .tab-title {
+      display: inline-block;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: $accent;
+      border-bottom: 2px solid $accent;
+      margin-bottom: -2px;
+    }
+  }
+
+  .order-lines-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 10px 14px;
+      font-size: 13px;
+      text-align: left;
+      border-bottom: 1px solid $border-color;
+    }
+
+    th {
+      color: $text-secondary;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .qty-input {
+      width: 54px;
+      padding: 4px 6px;
+      background: $bg-input;
+      border: 1px solid $border-color;
+      border-radius: 4px;
+      color: $text-primary;
+      text-align: center;
+    }
+
+    .period-span {
+      font-size: 11px;
+      color: $text-muted;
+    }
+
+    .asset-assign-sub {
+      margin-top: 6px;
+      font-size: 11px;
+      color: $text-secondary;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      select {
+        padding: 2px 6px;
+        background: $bg-input;
+        border: 1px solid $border-color;
+        color: $text-primary;
+        font-size: 11px;
+        border-radius: 3px;
+      }
+
+      .btn-add-asset-inline {
+        background: $bg-soft;
+        border: 1px solid $border-color;
+        border-radius: 3px;
+        color: $text-secondary;
+        padding: 0 5px;
+        cursor: pointer;
+
+        &:hover {
+          color: $text-primary;
+        }
+      }
+    }
+
+    .inline-asset-input {
+      margin-top: 6px;
+      padding: 6px;
+      background: $bg-soft;
+      border: 1px solid $border-color;
+      border-radius: 4px;
+      display: flex;
+      gap: 6px;
+      max-width: 250px;
+
+      input {
+        flex: 1;
+        padding: 2px 6px;
+        font-size: 11px;
+        background: $bg-input;
+        border: 1px solid $border-color;
+        color: $text-primary;
+      }
+
+      button {
+        padding: 2px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        border: 1px solid $border-color;
+        border-radius: 3px;
+        background: $bg-input;
+        color: $text-secondary;
+
+        &:hover {
+          color: $text-primary;
+        }
+      }
+    }
+
+    .product-select-inline-row {
+      background: rgba(255, 255, 255, 0.005);
+      
+      label {
+        font-size: 12px;
+        color: $text-muted;
+      }
+
+      select {
+        padding: 4px 8px;
+        background: $bg-input;
+        border: 1px solid $border-color;
+        color: $text-primary;
+        border-radius: 4px;
+      }
+    }
+
+    .add-product-row {
+      .add-product-btn, .add-note-btn {
+        font-size: 13px;
+        font-weight: 600;
+        color: $accent;
+        cursor: pointer;
+        margin-right: 18px;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .add-note-btn {
+        color: $text-muted;
+      }
+    }
+  }
+}
+
+.order-totals-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+  padding-right: 14px;
+
+  .total-row {
+    display: flex;
+    font-size: 13px;
+    color: $text-secondary;
+
+    span {
+      min-width: 140px;
+      text-align: right;
+    }
+
+    strong {
+      min-width: 100px;
+      text-align: right;
+      color: $text-primary;
+    }
+
+    &.grand-total {
+      font-size: 16px;
+      border-top: 1px solid $border-color;
+      padding-top: 8px;
+      margin-top: 4px;
+
+      strong {
+        color: $accent-green;
+      }
+    }
+  }
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-5px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// ─── Print Styles ───────────────────────────────────────
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .new-order-page {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .new-order-content {
+    padding: 0 !important;
+  }
+
+  .dashboard-nav,
+  .form-header-row,
+  .sub-actions-row,
+  .custom-address-block input,
+  .form-group input,
+  .form-group select,
+  .plans-table th:first-child,
+  .plans-table td:first-child,
+  .asset-assign-sub select,
+  .btn-add-asset-inline,
+  .add-product-row {
+    display: none !important;
+  }
+
+  .order-sheet {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    color: #000000 !important;
+  }
+
+  .order-ref-title {
+    color: #000000 !important;
+    font-size: 28px !important;
+    border-bottom: 2px solid #000000 !important;
+    padding-bottom: 8px !important;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    color: #000000 !important;
+  }
+
+  .form-group.row-align {
+    grid-template-columns: 120px 1fr !important;
+    margin-bottom: 8px !important;
+
+    label {
+      color: #333333 !important;
+    }
+
+    // Convert inputs and selects visually to plain text
+    input, select {
+      border: none !important;
+      background: transparent !important;
+      color: #000000 !important;
+      padding: 0 !important;
+      font-size: 13px !important;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+  }
+
+  .custom-address-block {
+    margin-left: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: #000000 !important;
+
+    input {
+      border: none !important;
+      background: transparent !important;
+      color: #000000 !important;
+      padding: 0 !important;
+      margin-bottom: 4px !important;
+    }
+  }
+
+  .rent-plans-table-section {
+    display: none !important;
+  }
+
+  .order-lines-section {
+    margin-top: 40px !important;
+
+    .tabs-bar {
+      border-bottom: 2px solid #000000 !important;
+      
+      .tab-title {
+        color: #000000 !important;
+        border-bottom: none !important;
+        font-size: 16px !important;
+      }
+    }
+
+    .order-lines-table {
+      th, td {
+        border-bottom: 1px solid #666666 !important;
+        color: #000000 !important;
+      }
+
+      th {
+        background: transparent !important;
+      }
+
+      .qty-input {
+        border: none !important;
+        background: transparent !important;
+        color: #000000 !important;
+        text-align: left !important;
+        padding: 0 !important;
+      }
+    }
+  }
+
+  .order-totals-breakdown {
+    margin-top: 30px !important;
+    color: #000000 !important;
+
+    .total-row {
+      color: #333333 !important;
+
+      strong {
+        color: #000000 !important;
+      }
+
+      &.grand-total {
+        border-top: 2px solid #000000 !important;
+        
+        strong {
+          color: #000000 !important;
+          font-size: 18px !important;
+        }
+      }
+    }
   }
 }
