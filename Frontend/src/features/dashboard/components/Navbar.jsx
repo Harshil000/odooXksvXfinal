@@ -22,6 +22,8 @@ const Navbar = ({
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Vendor"
     : "Vendor";
 
+  const isVendor = !!(user?.role || user?.v_id || user?.c_id);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -108,7 +110,6 @@ const Navbar = ({
           className={`nav-link nav-link-container ${activeSection === "products" ? "active" : ""}`} 
           style={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: "4px", cursor: "pointer" }}
           onClick={() => {
-            const isVendor = !!(user?.role || user?.v_id || user?.c_id);
             if (isVendor) {
               navigate("/add-product");
             } else {
@@ -285,7 +286,6 @@ const Navbar = ({
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: "4px", cursor: "pointer" }}
                   onClick={() => { 
                     setShowSidebar(false);
-                    const isVendor = !!(user?.role || user?.v_id || user?.c_id);
                     if (isVendor) {
                       navigate("/add-product");
                     } else {
