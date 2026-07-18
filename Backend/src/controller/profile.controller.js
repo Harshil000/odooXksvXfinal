@@ -1,5 +1,5 @@
-import { findUserById, updateUserProfile, updateCompanyProfile, findCompanyById } from "../repository/user.repository.js";
-import { findVendorById, updateVendorProfile } from "../repository/vendor.repository.js";
+import { findUserById, updateUserProfile, updateCompanyProfile, findCompanyById, updateUserPassword } from "../repository/user.repository.js";
+import { findVendorById, updateVendorProfile, updateVendorPassword } from "../repository/vendor.repository.js";
 import { createAddress, findAddressesByUserId, updateAddress, deleteAddress } from "../repository/address.repository.js";
 import { processImageToBase64 } from "../utils/image.util.js";
 
@@ -180,6 +180,26 @@ export async function deleteAddressController(req, res, next) {
     }
 
     return res.status(200).json({ message: "Address deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changePasswordController(req, res, next) {
+  try {
+    const isVendor = !!req.user.role;
+    const { id } = req.user;
+    const { password } = req.body;
+
+    if (isVendor) {
+      const updatedVendor = await updateVendorPassword(id, password);
+      delete updatedVendor.password;
+      return res.status(200).json({ message: "Password updated successfully", user: updatedVendor });
+    } else {
+      const updatedUser = await updateUserPassword(id, password);
+      delete updatedUser.password;
+      return res.status(200).json({ message: "Password updated successfully", user: updatedUser });
+    }
   } catch (error) {
     next(error);
   }

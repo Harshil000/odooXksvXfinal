@@ -7,6 +7,9 @@ import {
   findUserById as findUserByIdFromStore,
   createCompanyRecord,
   findCompanyById as findCompanyByIdFromStore,
+  initializeStore,
+  getStore,
+  saveStore,
 } from "../database/fileStore.js";
 import {
   INSERT_USER_QUERY,
@@ -148,5 +151,30 @@ export async function updateCompanyProfile(c_id, data) {
     data.comp_prof_image || null,
     c_id
   ]);
+  return result.rows[0];
+}
+
+export async function updateUserPassword(u_id, newPassword) {
+  const mode = resolveDatabaseMode();
+  const passwordHash = await argon2.hash(newPassword);
+
+  if (mode === "file") {
+    await initializeStore();
+    const store = getStore();
+    const user = store.users.find((u) => u.u_id === String(u_id));
+    if (!user) throw new Error("User not found");
+    user.password = passwordHash;
+    await saveStore();
+    return user;
+  }
+
+  const pool = getPool();
+  const query = `
+    UPDATE users 
+    SET password = $1
+    WHERE u_id = $2
+    RETURNING u_id, first_name, last_name, email;
+  `;
+  const result = await pool.query(query, [passwordHash, u_id]);
   return result.rows[0];
 }

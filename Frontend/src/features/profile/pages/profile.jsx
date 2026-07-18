@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Edit2, Trash2, Shield, Lock, MapPin, Plus, Check, ShoppingCart, User as UserIcon } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
 import { ToastContainer } from "react-toastify";
+import { Link } from "react-router";
 import "../styles/profile.scss";
 
 const Profile = () => {
@@ -234,10 +235,10 @@ const Profile = () => {
                                 <span className="sec-desc">Enabled via SMS</span>
                             </div>
                         </div>
-                        <button className="change-password-btn">
+                        <Link to="/change-password" className="change-password-btn" style={{ textDecoration: "none" }}>
                             <Lock size={14} />
                             Change Password
-                        </button>
+                        </Link>
                     </div>
                 </div>
 
