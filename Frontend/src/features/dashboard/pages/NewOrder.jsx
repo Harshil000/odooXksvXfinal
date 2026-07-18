@@ -39,12 +39,19 @@ const NewOrder = () => {
   // Quotation entity details (if viewing an existing one)
   const [quotation, setQuotation] = useState(null);
 
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState("");
+  // Multi-item quotation state
+  const [items, setItems] = useState([]);
+  const [activeItemIndex, setActiveItemIndex] = useState(-1);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [rentPlans, setRentPlans] = useState([]);
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  
+
+  // Derived active items details
+  const selectedProduct = activeItemIndex >= 0 && items[activeItemIndex] ? items[activeItemIndex].p_id : "";
+  const selectedPlanId = activeItemIndex >= 0 && items[activeItemIndex] ? items[activeItemIndex].r_id : "";
+  const quantity = activeItemIndex >= 0 && items[activeItemIndex] ? items[activeItemIndex].quantity : 1;
+
+  const [products, setProducts] = useState([]);
+
   // Form State
   const [customerName, setCustomerName] = useState("");
   const [email, setEmail] = useState("");
@@ -57,14 +64,13 @@ const NewOrder = () => {
     const date = searchParams.get("end_date") || searchParams.get("start_date");
     return date ? `${date}T18:00` : "";
   });
-  const [quantity, setQuantity] = useState(1);
 
   // Address State
   const [customerExists, setCustomerExists] = useState(false);
   const [customerAddresses, setCustomerAddresses] = useState([]);
   const [invoiceAddressId, setInvoiceAddressId] = useState("custom");
   const [deliveryAddressId, setDeliveryAddressId] = useState("custom");
-  
+
   const [customInvoiceAddress, setCustomInvoiceAddress] = useState({
     address_line1: "",
     address_line2: "",
@@ -111,9 +117,50 @@ const NewOrder = () => {
         setQuotation(q);
         setCustomerName(q.customer_name);
         setEmail(q.customer_email);
-        setSelectedProduct(q.p_id);
-        setSelectedPlanId(q.r_id);
-        setQuantity(q.quantity);
+
+        // Pre-populate items list
+        if (q.items && q.items.length > 0) {
+          const mappedItems = q.items.map(item => {
+            const planObj = {
+              r_id: item.r_id,
+              price: Number(item.plan_price || 0),
+              duration_type: item.duration_type
+            };
+            return {
+              id: item.q_id,
+              p_id: item.p_id,
+              product_name: item.product_name,
+              quantity: item.quantity,
+              r_id: item.r_id,
+              plan: planObj,
+              plan_price: Number(item.plan_price || 0),
+              duration_type: item.duration_type,
+              total: Number(item.total)
+            };
+          });
+          setItems(mappedItems);
+          setActiveItemIndex(0);
+        } else {
+          // Fallback single-item list
+          const planObj = {
+            r_id: q.r_id,
+            price: Number(q.plan_price || 0),
+            duration_type: q.duration_type
+          };
+          const fallbackItem = {
+            id: q.q_id,
+            p_id: q.p_id,
+            product_name: q.product_name,
+            quantity: q.quantity,
+            r_id: q.r_id,
+            plan: planObj,
+            plan_price: Number(q.plan_price || 0),
+            duration_type: q.duration_type,
+            total: Number(q.total)
+          };
+          setItems([fallbackItem]);
+          setActiveItemIndex(0);
+        }
 
         if (q.start_date) {
           setStartDate(toISTString(q.start_date));
@@ -155,7 +202,10 @@ const NewOrder = () => {
         setRentPlans(plans);
         // Only override plan selection if not in viewing mode
         if (!qId && plans.length > 0) {
-          setSelectedPlanId(plans[0].r_id);
+          const currentItem = items[activeItemIndex];
+          if (currentItem && !currentItem.r_id) {
+            handleSelectPlanId(plans[0].r_id, plans);
+          }
         }
       } catch (err) {
         console.error("Failed to load product plans:", err);
@@ -207,7 +257,7 @@ const NewOrder = () => {
           if (addrs.length === 1) {
             const addr = addrs[0];
             setDeliveryAddressId(addr.address_id);
-            
+
             // Enter it automatically into the fields of delivery address only
             setCustomDeliveryAddress({
               address_line1: addr.address_line1 || "",
@@ -218,7 +268,7 @@ const NewOrder = () => {
             });
           } else if (addrs.length > 1) {
             setDeliveryAddressId(addrs[0].address_id);
-            
+
             // Pre-populate fields with first address values
             const firstAddr = addrs[0];
             setCustomDeliveryAddress({
@@ -296,14 +346,114 @@ const NewOrder = () => {
     return rentPlans.find((p) => p.r_id === selectedPlanId) || null;
   }, [selectedPlanId, rentPlans]);
 
-  const durationInfo = useMemo(() => {
-    if (!selectedPlan || !startDate || !endDate) return { total: 0, durationLabel: "0 periods" };
-    return calculateRentalTotal(startDate, endDate, selectedPlan);
-  }, [startDate, endDate, selectedPlan]);
+  const selectedProductDetails = useMemo(() => {
+    return products.find((p) => p.p_id === selectedProduct) || null;
+  }, [selectedProduct, products]);
 
+  // Intercepting single variable setters to map to active array element
+  const setSelectedProduct = (productId) => {
+    handleProductChange(productId);
+  };
+
+  const setSelectedPlanId = (planId) => {
+    handleSelectPlanId(planId);
+  };
+
+  const setQuantity = (qty) => {
+    handleSelectQuantity(qty);
+  };
+
+  const handleProductChange = (productId) => {
+    if (!productId) return;
+    const product = products.find(p => p.p_id === productId);
+    if (!product) return;
+
+    // Create a new item object
+    const newItem = {
+      id: Date.now() + Math.random().toString(36).substr(2, 5),
+      p_id: productId,
+      product_name: product.pname,
+      quantity: 1,
+      r_id: "",
+      plan: null,
+      plan_price: 0,
+      duration_type: "",
+      total: 0
+    };
+
+    const newItems = [...items, newItem];
+    setItems(newItems);
+    setActiveItemIndex(newItems.length - 1);
+  };
+
+  const handleSelectPlanId = (planId, activePlansList = rentPlans) => {
+    if (activeItemIndex < 0 || !items[activeItemIndex]) return;
+    const updated = [...items];
+    const item = updated[activeItemIndex];
+    item.r_id = planId;
+    const plan = activePlansList.find(p => p.r_id === planId);
+    if (plan) {
+      item.plan = plan;
+      item.plan_price = Number(plan.price || 0);
+      item.duration_type = plan.duration_type || "";
+      if (startDate && endDate) {
+        const calc = calculateRentalTotal(startDate, endDate, plan);
+        item.total = calc.total * item.quantity;
+      }
+    }
+    setItems(updated);
+  };
+
+  const handleSelectQuantity = (qty) => {
+    if (activeItemIndex < 0 || !items[activeItemIndex]) return;
+    const updated = [...items];
+    const item = updated[activeItemIndex];
+    item.quantity = qty;
+    if (item.plan && startDate && endDate) {
+      const calc = calculateRentalTotal(startDate, endDate, item.plan);
+      item.total = calc.total * qty;
+    }
+    setItems(updated);
+  };
+
+  const handleQuantityChange = (idx, qty) => {
+    const updated = [...items];
+    const item = updated[idx];
+    item.quantity = qty;
+    if (item.plan && startDate && endDate) {
+      const calc = calculateRentalTotal(startDate, endDate, item.plan);
+      item.total = calc.total * qty;
+    }
+    setItems(updated);
+  };
+
+  const handleDeleteLine = (idx) => {
+    const updated = items.filter((_, i) => i !== idx);
+    setItems(updated);
+    if (activeItemIndex === idx) {
+      setActiveItemIndex(updated.length - 1);
+    } else if (activeItemIndex > idx) {
+      setActiveItemIndex(activeItemIndex - 1);
+    }
+  };
+
+  const recalculateAllTotals = (newStart, newEnd, currentItems) => {
+    return currentItems.map(item => {
+      if (!item.plan || !newStart || !newEnd) return item;
+      const calc = calculateRentalTotal(newStart, newEnd, item.plan);
+      return {
+        ...item,
+        plan_price: Number(item.plan.price || 0),
+        duration_type: item.plan.duration_type || "",
+        total: calc.total * item.quantity
+      };
+    });
+  };
+
+  // Grand totals mapping
   const untaxedAmount = useMemo(() => {
-    return durationInfo.total * quantity;
-  }, [durationInfo, quantity]);
+    return items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  }, [items]);
 
   const taxAmount = useMemo(() => {
     return untaxedAmount * 0.10;
@@ -312,12 +462,6 @@ const NewOrder = () => {
   const totalAmount = useMemo(() => {
     return untaxedAmount + taxAmount;
   }, [untaxedAmount, taxAmount]);
-
-  const handleProductChange = (productId) => {
-    setSelectedProduct(productId);
-    setRentPlans([]);
-    setSelectedPlanId("");
-  };
 
   // Date limit checks
   const minDateTime = useMemo(() => {
@@ -328,7 +472,7 @@ const NewOrder = () => {
     const now = new Date();
     const startUTC = new Date(parseISTToUTC(startDate));
     const endUTC = new Date(parseISTToUTC(endDate));
-    
+
     if (startUTC < now) {
       alert("Start date and time cannot be in the past.");
       return false;
@@ -360,8 +504,9 @@ const NewOrder = () => {
   // ─── Quotation Actions ────────────────────────────────────
 
   const handleSendQuotation = async () => {
-    if (!selectedProduct) return alert("Please select a Product.");
-    if (!selectedPlanId) return alert("Please select a Rental Plan.");
+    if (items.length === 0) return alert("Please select at least one Product.");
+    const missingPlan = items.some(item => !item.r_id);
+    if (missingPlan) return alert("Please select a Rental Plan for all selected products.");
     if (!customerName) return alert("Please enter Customer Name.");
     if (!email) return alert("Please enter Customer Email.");
     if (!startDate || !endDate) return alert("Please specify start and end dates.");
@@ -371,15 +516,16 @@ const NewOrder = () => {
     try {
       setSaving(true);
       const payload = {
-        p_id: selectedProduct,
-        r_id: selectedPlanId,
         customer_name: customerName,
         customer_email: email,
-        quantity: Number(quantity),
-        start_date: parseISTToUTC(startDate),
-        end_date: parseISTToUTC(endDate),
-        total: Number(totalAmount.toFixed(2)),
-        status: "sent",
+        items: items.map(item => ({
+          p_id: item.p_id,
+          r_id: item.r_id,
+          quantity: item.quantity,
+          start_date: parseISTToUTC(startDate),
+          end_date: parseISTToUTC(endDate),
+          total: item.total
+        })),
         invoice_address_id: null,
         delivery_address_id: deliveryAddressId !== "custom" ? deliveryAddressId : null,
         invoiceAddress: {
@@ -473,10 +619,6 @@ const NewOrder = () => {
     window.print();
   };
 
-  const selectedProductDetails = useMemo(() => {
-    return products.find((p) => p.p_id === selectedProduct) || null;
-  }, [selectedProduct, products]);
-
   const formattedPeriodLabel = useMemo(() => {
     if (!startDate || !endDate) return "";
     const startStr = new Date(startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -492,7 +634,7 @@ const NewOrder = () => {
 
   return (
     <div className="new-order-page">
-      <Navbar activeSection="quotation" searchQuery="" onSearchChange={() => {}} />
+      <Navbar activeSection="quotation" searchQuery="" onSearchChange={() => { }} />
 
       <div className="new-order-content">
         <div className="new-order-form">
@@ -524,8 +666,8 @@ const NewOrder = () => {
             <div className="action-buttons">
               {/* 1. Send Quotation Button (New creation state) */}
               {!qId && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-send"
                   onClick={handleSendQuotation}
                   disabled={saving}
@@ -536,8 +678,8 @@ const NewOrder = () => {
 
               {/* 2. Confirm Button (Quotation Sent state) */}
               {qId && isSent && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-confirm"
                   onClick={handleConfirmQuotation}
                   disabled={saving}
@@ -548,8 +690,8 @@ const NewOrder = () => {
 
               {/* 3. Convert Button (Confirmed state) */}
               {qId && isConfirmed && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-confirm"
                   onClick={handleConvertQuotation}
                   disabled={saving}
@@ -558,8 +700,8 @@ const NewOrder = () => {
                 </button>
               )}
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-print"
                 onClick={handlePrint}
               >
@@ -684,7 +826,7 @@ const NewOrder = () => {
                     placeholder="Delivery Address Line 1"
                     required
                     value={customDeliveryAddress.address_line1}
-                    onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, address_line1: e.target.value})}
+                    onChange={(e) => setCustomDeliveryAddress({ ...customDeliveryAddress, address_line1: e.target.value })}
                     disabled={isConverted || deliveryAddressId !== "custom"}
                     style={{ padding: "6px 12px", background: "#0f0f14", border: "1px solid #27272a", borderRadius: "4px", color: "#fff" }}
                   />
@@ -692,7 +834,7 @@ const NewOrder = () => {
                     type="text"
                     placeholder="Delivery Address Line 2 (Optional)"
                     value={customDeliveryAddress.address_line2}
-                    onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, address_line2: e.target.value})}
+                    onChange={(e) => setCustomDeliveryAddress({ ...customDeliveryAddress, address_line2: e.target.value })}
                     disabled={isConverted || deliveryAddressId !== "custom"}
                     style={{ padding: "6px 12px", background: "#0f0f14", border: "1px solid #27272a", borderRadius: "4px", color: "#fff" }}
                   />
@@ -702,7 +844,7 @@ const NewOrder = () => {
                       placeholder="City"
                       required
                       value={customDeliveryAddress.city}
-                      onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, city: e.target.value})}
+                      onChange={(e) => setCustomDeliveryAddress({ ...customDeliveryAddress, city: e.target.value })}
                       disabled={isConverted || deliveryAddressId !== "custom"}
                       style={{ flex: 1, padding: "6px 12px", background: "#0f0f14", border: "1px solid #27272a", borderRadius: "4px", color: "#fff" }}
                     />
@@ -711,7 +853,7 @@ const NewOrder = () => {
                       placeholder="State"
                       required
                       value={customDeliveryAddress.state}
-                      onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, state: e.target.value})}
+                      onChange={(e) => setCustomDeliveryAddress({ ...customDeliveryAddress, state: e.target.value })}
                       disabled={isConverted || deliveryAddressId !== "custom"}
                       style={{ flex: 1, padding: "6px 12px", background: "#0f0f14", border: "1px solid #27272a", borderRadius: "4px", color: "#fff" }}
                     />
@@ -720,7 +862,7 @@ const NewOrder = () => {
                       placeholder="Pincode"
                       required
                       value={customDeliveryAddress.pincode}
-                      onChange={(e) => setCustomDeliveryAddress({...customDeliveryAddress, pincode: e.target.value})}
+                      onChange={(e) => setCustomDeliveryAddress({ ...customDeliveryAddress, pincode: e.target.value })}
                       disabled={isConverted || deliveryAddressId !== "custom"}
                       style={{ flex: 1, padding: "6px 12px", background: "#0f0f14", border: "1px solid #27272a", borderRadius: "4px", color: "#fff" }}
                     />
@@ -736,7 +878,10 @@ const NewOrder = () => {
                     type="datetime-local"
                     required
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setItems(prev => recalculateAllTotals(e.target.value, endDate, prev));
+                    }}
                     disabled={isConverted}
                     min={minDateTime}
                   />
@@ -748,7 +893,10 @@ const NewOrder = () => {
                     type="datetime-local"
                     required
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setItems(prev => recalculateAllTotals(startDate, e.target.value, prev));
+                    }}
                     disabled={isConverted}
                     min={startDate || minDateTime}
                   />
@@ -777,11 +925,11 @@ const NewOrder = () => {
                     </thead>
                     <tbody>
                       {rentPlans.map((rp) => (
-                        <tr 
-                          key={rp.r_id} 
+                        <tr
+                          key={rp.r_id}
                           className={selectedPlanId === rp.r_id ? "selected-row" : ""}
                           onClick={() => {
-                            if (!isConverted) setSelectedPlanId(rp.r_id);
+                            if (!isConverted) handleSelectPlanId(rp.r_id);
                           }}
                           style={{
                             borderBottom: "1px solid #1f1f24",
@@ -795,7 +943,7 @@ const NewOrder = () => {
                               name="rent-plan"
                               checked={selectedPlanId === rp.r_id}
                               onChange={() => {
-                                if (!isConverted) setSelectedPlanId(rp.r_id);
+                                if (!isConverted) handleSelectPlanId(rp.r_id);
                               }}
                               disabled={isConverted}
                             />
@@ -830,42 +978,72 @@ const NewOrder = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedProduct ? (
-                    <tr style={{ borderBottom: "1px solid #1f1f24" }}>
-                      <td className="product-details-cell" style={{ padding: "8px" }}>
-                        <strong>{selectedProductDetails?.pname}</strong>
-                        {formattedPeriodLabel && (
-                          <span className="period-span" style={{ color: "#a1a1aa", fontSize: "12px", marginLeft: "8px" }}> [{formattedPeriodLabel}]</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="number"
-                          min="1"
-                          className="qty-input"
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                          disabled={isConverted}
-                          style={{
-                            width: "60px",
-                            padding: "4px 8px",
-                            background: "#0f0f14",
-                            border: "1px solid #27272a",
-                            borderRadius: "4px",
-                            color: "#fff"
-                          }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>Units</td>
-                      <td style={{ padding: "8px" }}>
-                        {selectedPlan ? `$${Number(selectedPlan.price)}` : "No plan selected"}
-                      </td>
-                      <td style={{ padding: "8px" }}>10%</td>
-                      <td style={{ padding: "8px" }}>
-                        ${untaxedAmount.toFixed(2)}
-                      </td>
-                    </tr>
-                  ) : null}
+                  {items.map((item, idx) => {
+                    const isRowActive = idx === activeItemIndex;
+                    return (
+                      <tr 
+                        key={item.id} 
+                        onClick={() => {
+                          if (!isConverted) {
+                            setActiveItemIndex(idx);
+                          }
+                        }}
+                        style={{ 
+                          borderBottom: "1px solid #1f1f24",
+                          background: isRowActive ? "rgba(192, 132, 252, 0.05)" : "transparent",
+                          cursor: isConverted ? "default" : "pointer"
+                        }}
+                      >
+                        <td className="product-details-cell" style={{ padding: "8px" }}>
+                          <strong>{item.product_name}</strong>
+                          {formattedPeriodLabel && (
+                            <span className="period-span" style={{ color: "#a1a1aa", fontSize: "12px", marginLeft: "8px" }}> [{formattedPeriodLabel}]</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "8px" }}>
+                          <input
+                            type="number"
+                            min="1"
+                            className="qty-input"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleQuantityChange(idx, Math.max(1, Number(e.target.value)));
+                            }}
+                            disabled={isConverted}
+                            style={{
+                              width: "60px",
+                              padding: "4px 8px",
+                              background: "#0f0f14",
+                              border: "1px solid #27272a",
+                              borderRadius: "4px",
+                              color: "#fff"
+                            }}
+                          />
+                        </td>
+                        <td style={{ padding: "8px" }}>Units</td>
+                        <td style={{ padding: "8px" }}>
+                          {item.plan ? `$${Number(item.plan.price)} / ${item.plan.duration_type}` : "No plan selected"}
+                        </td>
+                        <td style={{ padding: "8px" }}>10%</td>
+                        <td style={{ padding: "8px" }}>
+                          ${Number(item.total).toFixed(2)}
+                          {!isConverted && !qId && (
+                            <span 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLine(idx);
+                              }}
+                              style={{ marginLeft: "12px", color: "#ef4444", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                              title="Remove product"
+                            >
+                              ✕
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                   {/* Add a Product Option row */}
                   {(!selectedProduct || showProductDropdown) && !isConverted && (
@@ -901,11 +1079,11 @@ const NewOrder = () => {
                     </tr>
                   )}
 
-                  {!selectedProduct && !showProductDropdown && !isConverted && (
+                  {!showProductDropdown && !isConverted && (
                     <tr>
                       <td colSpan="6" className="add-product-row" style={{ padding: "12px 8px" }}>
-                        <span 
-                          className="add-product-btn" 
+                        <span
+                          className="add-product-btn"
                           onClick={() => setShowProductDropdown(true)}
                           style={{ color: "#c084fc", cursor: "pointer", marginRight: "16px", fontWeight: "600" }}
                         >
@@ -919,7 +1097,7 @@ const NewOrder = () => {
               </table>
 
               {/* Total Summary Breakdown */}
-              {selectedProduct && (
+              {items.length > 0 && (
                 <div className="order-totals-breakdown" style={{ marginTop: "20px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
                   <div className="total-row" style={{ display: "flex", gap: "24px", fontSize: "14px" }}>
                     <span style={{ color: "#a1a1aa" }}>Untaxed Amount:</span>
