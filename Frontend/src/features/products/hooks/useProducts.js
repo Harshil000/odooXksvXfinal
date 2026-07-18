@@ -1,39 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { loadProductCards } from "../services/product.service";
 
 export function useProducts() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 8; // Load 8 products at a time
 
-  useEffect(() => {
-    let active = true;
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
 
-    async function loadProducts() {
-      try {
-        const productCards = await loadProductCards();
-        if (active) {
-          setProducts(productCards);
-          setError(null);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err);
-          console.error("Error fetching products:", err);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+    try {
+      setLoading(true);
+      const productCards = await loadProductCards(LIMIT, offset);
+      if (productCards.length < LIMIT) {
+        setHasMore(false);
       }
+      setProducts((prev) => {
+        const existingIds = new Set(prev.map(p => p.id));
+        const uniqueNew = productCards.filter(p => !existingIds.has(p.id));
+        return [...prev, ...uniqueNew];
+      });
+      setOffset((prev) => prev + LIMIT);
+    } catch (err) {
+      setError(err);
+      console.error("Error fetching products:", err);
+    } finally {
+      setLoading(false);
     }
+  }, [offset, loading, hasMore]);
 
-    loadProducts();
-
-    return () => {
-      active = false;
-    };
+  // Initial load
+  useEffect(() => {
+    loadMore();
   }, []);
 
-  return { products, loading, error };
+  return { products, loading, error, hasMore, loadMore };
 }

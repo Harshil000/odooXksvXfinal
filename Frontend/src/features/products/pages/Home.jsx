@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../../cart/hooks/useCart';
@@ -7,9 +7,33 @@ import '../styles/Home.scss';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { products } = useProducts();
+  const { products, loading, hasMore, loadMore } = useProducts();
   const { totals } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+  const observerRef = useRef();
+
+  // Scroll loader observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = observerRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [loadMore, hasMore, loading]);
   
   // Checking user role from local storage or context would happen here
   const isAdmin = true; // Hardcoded to true for demo purposes to show the add button
@@ -144,12 +168,10 @@ const Home = () => {
             ))}
           </div>
 
-          <div className="pagination">
-            <button>&lt;</button>
-            <button>1</button>
-            <button>2</button>
-            <span>...</span>
-            <button>&gt;</button>
+          {/* Scroll trigger / loading indicator */}
+          <div ref={observerRef} className="infinite-scroll-trigger">
+            {loading && <div className="loading-spinner">Loading more products...</div>}
+            {!hasMore && products.length > 0 && <div className="no-more-products">No more products to display.</div>}
           </div>
         </main>
       </div>

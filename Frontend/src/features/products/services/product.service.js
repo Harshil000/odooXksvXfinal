@@ -1,8 +1,8 @@
 import { createProduct, getProductById, getProducts, updateProduct } from "../api/product.api";
 import { mapProductDetails, mapProductToCard } from "../utils/product.mapper";
 
-export async function loadProductCards() {
-  const data = await getProducts();
+export async function loadProductCards(limit, offset) {
+  const data = await getProducts(limit, offset);
 
   return (data.products || []).map(mapProductToCard);
 }

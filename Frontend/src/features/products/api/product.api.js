@@ -1,8 +1,12 @@
 import httpClient, { getErrorPayload } from "../../../shared/api/httpClient";
 
-export async function getProducts() {
+export async function getProducts(limit, offset) {
   try {
-    const response = await httpClient.get("/products");
+    let url = "/products";
+    if (limit !== undefined && offset !== undefined) {
+      url += `?limit=${limit}&offset=${offset}`;
+    }
+    const response = await httpClient.get(url);
     return response.data;
   } catch (error) {
     throw getErrorPayload(error, "Unable to load products");

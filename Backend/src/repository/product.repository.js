@@ -33,9 +33,21 @@ export async function createProduct(c_id, productData) {
   return result.rows[0];
 }
 
-export async function getAllProducts() {
+export async function getAllProducts(limit = null, offset = 0) {
   const pool = getPool();
-  const result = await pool.query(SELECT_ALL_PRODUCTS_QUERY);
+  let query = SELECT_ALL_PRODUCTS_QUERY.trim();
+  if (query.endsWith(";")) {
+    query = query.slice(0, -1);
+  }
+  
+  const params = [];
+  if (limit !== null) {
+    query += ` LIMIT $1 OFFSET $2`;
+    params.push(limit, offset);
+  }
+  query += ";";
+  
+  const result = await pool.query(query, params);
   return result.rows;
 }
 
