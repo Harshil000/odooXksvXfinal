@@ -13,7 +13,18 @@ const Home = () => {
   const { products, attributes, loading, error, hasMore, loadMore } = useProducts();
   const { totals } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Debounced search query states
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchInput);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
   const [selectedFilters, setSelectedFilters] = useState({});
   const observerRef = useRef(null);
 
@@ -67,7 +78,7 @@ const Home = () => {
 
   const filteredProducts = (products || []).filter((product) => {
     // 1. Search filter
-    const matchesSearch = product.pname.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = product.pname.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
     // 2. Publish status filter (Customers only see published ones)
@@ -93,8 +104,8 @@ const Home = () => {
       {/* Integrated Navbar */}
       <Navbar 
         activeSection="products" 
-        searchQuery={searchQuery} 
-        onSearchChange={setSearchQuery} 
+        searchQuery={searchInput} 
+        onSearchChange={setSearchInput} 
         searchPlaceholder="Search products..." 
       />
 
@@ -136,62 +147,68 @@ const Home = () => {
             )}
           </div>
 
-          <div className="products-grid">
-            {filteredProducts.map((product) => (
-              <div 
-                key={product.id} 
-                className="product-card" 
-                onClick={() => navigate(`/product/${product.id}`)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="image-container">
-                  {isAdmin && (
-                    <div className="admin-card-actions">
-                      <button 
-                        className="admin-edit-btn" 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          navigate(`/edit-product/${product.id}`); 
-                        }}
-                        title="Edit Product"
-                      >
-                        ✏️
-                      </button>
-                      <button 
-                        className="admin-delete-btn" 
-                        onClick={(e) => handleDeleteProduct(e, product.id)}
-                        title="Delete Product"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  )}
+          {filteredProducts.length === 0 ? (
+            <div className="no-products-found" style={{ padding: "40px 20px", textAlign: "center", color: "#a1a1aa", fontSize: "16px", background: "#1e1e1e", borderRadius: "8px", border: "1px solid #27272a", marginTop: "20px" }}>
+              No product found
+            </div>
+          ) : (
+            <div className="products-grid">
+              {filteredProducts.map((product) => (
+                <div 
+                  key={product.id} 
+                  className="product-card" 
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="image-container">
+                    {isAdmin && (
+                      <div className="admin-card-actions">
+                        <button 
+                          className="admin-edit-btn" 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            navigate(`/edit-product/${product.id}`); 
+                          }}
+                          title="Edit Product"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="admin-delete-btn" 
+                          onClick={(e) => handleDeleteProduct(e, product.id)}
+                          title="Delete Product"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    )}
 
-                  {isAdmin && product.to_publish === false && (
-                    <div className="unpublished-badge">Unpublished</div>
-                  )}
+                    {isAdmin && product.to_publish === false && (
+                      <div className="unpublished-badge">Unpublished</div>
+                    )}
 
-                  {product.outOfStock ? (
-                    <div className="out-of-stock-badge">Out of stock</div>
-                  ) : (
-                    <img src={product.image} alt="Product" />
-                  )}
-                  
-                  {product.colors && product.colors.length > 0 && (
-                    <div className="variants">
-                      {product.colors.map((color, idx) => (
-                        <div key={idx} className="variant-dot" style={{ backgroundColor: color }}></div>
-                      ))}
-                    </div>
-                  )}
+                    {product.outOfStock ? (
+                      <div className="out-of-stock-badge">Out of stock</div>
+                    ) : (
+                      <img src={product.image} alt="Product" />
+                    )}
+                    
+                    {product.colors && product.colors.length > 0 && (
+                      <div className="variants">
+                        {product.colors.map((color, idx) => (
+                          <div key={idx} className="variant-dot" style={{ backgroundColor: color }}></div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="product-info">
+                    <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
+                    <div className="price">{product.price} / per {product.duration}</div>
+                  </div>
                 </div>
-                <div className="product-info">
-                  <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
-                  <div className="price">{product.price} / per {product.duration}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Scroll trigger / loading indicator */}
           <div ref={observerRef} className="infinite-scroll-trigger">
