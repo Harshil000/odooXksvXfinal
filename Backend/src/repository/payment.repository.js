@@ -19,9 +19,9 @@ const DELETE_USER_CART_QUERY = `
 
 /**
  * Finds a free asset for a product in the given rental window.
- * Falls back to any asset, or creates a mock asset if none exist, ensuring checkout never blocks.
+ * Only returns assets that are not already booked in the requested window.
  */
-async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
+async function findFreeAsset(p_id, startDate, endDate, client) {
   const freeAssetQuery = `
     SELECT a.asset_id 
     FROM assets a
@@ -32,6 +32,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
         WHERE ro.delivery_status NOT IN ('returned', 'cancelled')
           AND NOT (ro.end_date <= $2 OR ro.start_date >= $3)
       )
+    ORDER BY a.asset_id
     LIMIT 1;
   `;
   const res = await client.query(freeAssetQuery, [p_id, startDate, endDate]);
@@ -39,21 +40,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
     return res.rows[0].asset_id;
   }
 
-  const anyAssetQuery = `SELECT asset_id FROM assets WHERE p_id = $1 LIMIT 1;`;
-  const anyAssetRes = await client.query(anyAssetQuery, [p_id]);
-  if (anyAssetRes.rows[0]) {
-    return anyAssetRes.rows[0].asset_id;
-  }
-
-  // Auto-generate fallback asset
-  const createAssetQuery = `
-    INSERT INTO assets (p_id, qr) 
-    VALUES ($1, $2) 
-    RETURNING asset_id;
-  `;
-  const fallbackQr = `FALLBACK-${p_id.slice(0, 8)}-${Date.now()}`;
-  const createRes = await client.query(createAssetQuery, [p_id, fallbackQr]);
-  return createRes.rows[0].asset_id;
+  return null;
 }
 
 /**
@@ -115,63 +102,70 @@ export async function saveCheckoutTransaction({
 
     // 2. Loop and create renting orders & payments
     for (const item of cartItems) {
-      const asset_id = await findOrCreateFreeAsset(item.p_id, item.startDate, item.endDate, client);
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const depositAmount = Number(item.deposit || 0) * quantity;
+      const rentalTotal = Number(item.rentalSubtotal ?? (Number(item.subtotal || 0) - depositAmount));
+      const rentalTotalPerUnit = rentalTotal / quantity;
+      const depositAmountPerUnit = depositAmount / quantity;
 
-      const rentalTotal = Number(item.subtotal || 0);
-      const depositAmount = Number(item.deposit || 0);
-      const totalAmount = rentalTotal + depositAmount;
+      for (let unitIndex = 0; unitIndex < quantity; unitIndex += 1) {
+        const asset_id = await findFreeAsset(item.p_id, item.startDate, item.endDate, client);
+        if (!asset_id) {
+          throw new Error(`No available assets for ${item.productName || item.product_name || "this product"} in the selected rental period`);
+        }
 
-      // 2.1 Insert Renting Order
-      const orderRes = await client.query(INSERT_ORDER_WITH_PAYMENT_QUERY, [
-        item.r_id,
-        asset_id,
-        u_id,
-        addressId, // invoice_address_id
-        addressId, // delivery_address_id
-        email,
-        item.startDate,
-        item.endDate,
-        "pending", // delivery_status
-        "nothing_to_invoice", // invoice_status
-        rentalTotal, // total (rent charge only)
-        "paid", // payment_status
-        depositAmount, // deposit_amount
-        0, // deposit_refunded_amount
-      ]);
-
-      const order = orderRes.rows[0];
-      createdOrders.push(order);
-
-      // 2.2 Insert Rent Payment (Audit Trail)
-      if (rentalTotal > 0) {
-        await client.query(INSERT_PAYMENT_QUERY, [
-          order.rent_id,
+        // 2.1 Insert Renting Order
+        const orderRes = await client.query(INSERT_ORDER_WITH_PAYMENT_QUERY, [
+          item.r_id,
+          asset_id,
           u_id,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          rentalTotal,
-          "INR",
-          false, // is_deposit
-          "captured", // status
-          method || "card",
+          addressId, // invoice_address_id
+          addressId, // delivery_address_id
+          email,
+          item.startDate,
+          item.endDate,
+          "pending", // delivery_status
+          "nothing_to_invoice", // invoice_status
+          rentalTotalPerUnit, // total (rent charge only)
+          "paid", // payment_status
+          depositAmountPerUnit, // deposit_amount
+          0, // deposit_refunded_amount
         ]);
-      }
 
-      // 2.3 Insert Deposit Payment (Audit Trail)
-      if (depositAmount > 0) {
-        await client.query(INSERT_PAYMENT_QUERY, [
-          order.rent_id,
-          u_id,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          depositAmount,
-          "INR",
-          true, // is_deposit
-          "captured", // status
-          method || "card",
-        ]);
+        const order = orderRes.rows[0];
+        createdOrders.push(order);
+
+        // 2.2 Insert Rent Payment (Audit Trail)
+        if (rentalTotalPerUnit > 0) {
+          await client.query(INSERT_PAYMENT_QUERY, [
+            order.rent_id,
+            u_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            rentalTotalPerUnit,
+            "INR",
+            false, // is_deposit
+            "captured", // status
+            method || "card",
+          ]);
+        }
+
+        // 2.3 Insert Deposit Payment (Audit Trail)
+        if (depositAmountPerUnit > 0) {
+          await client.query(INSERT_PAYMENT_QUERY, [
+            order.rent_id,
+            u_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            depositAmountPerUnit,
+            "INR",
+            true, // is_deposit
+            "captured", // status
+            method || "card",
+          ]);
+        }
       }
     }
 

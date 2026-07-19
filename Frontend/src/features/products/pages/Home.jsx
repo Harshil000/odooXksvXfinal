@@ -171,6 +171,10 @@ const Home = () => {
                     <div className="unpublished-badge">Unpublished</div>
                   )}
 
+                  {product.lowOnStock && (
+                    <div className="low-stock-badge">Low on stock</div>
+                  )}
+
                   {product.outOfStock ? (
                     <div className="out-of-stock-badge">Out of stock</div>
                   ) : (

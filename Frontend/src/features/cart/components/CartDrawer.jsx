@@ -156,6 +156,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 startDate: item.startDate,
                 endDate: item.endDate,
                 quantity: item.quantity,
+                rentalSubtotal: item.totalPlanPrice * item.quantity,
                 subtotal: item.subtotal,
                 deposit: item.deposit,
               })),

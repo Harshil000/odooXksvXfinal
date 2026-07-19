@@ -19,20 +19,68 @@ const Assets = () => {
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
   const [scannedProductModalAsset, setScannedProductModalAsset] = useState(null);
   const [scannerError, setScannerError] = useState("");
+  const [jsQRLoaded, setJsQRLoaded] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef(null);
+  const productsRef = useRef(products);
 
+  // Keep ref in sync so camera callback can read latest products
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+
+  const formatScanDate = (date) => {
+    if (!date) return "Not set";
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // When matchedAsset changes (from manual input), open the result modal
   useEffect(() => {
     if (matchedAsset) {
       setScannedProductModalAsset(matchedAsset);
     }
   }, [matchedAsset]);
 
+  // Load jsQR script once when scanner is first opened
   useEffect(() => {
-    if (!scannerOpen) return undefined;
+    if (!scannerOpen) return;
+
+    if (window.jsQR) {
+      setJsQRLoaded(true);
+      return;
+    }
+
+    if (!document.getElementById("jsqr-script")) {
+      const script = document.createElement("script");
+      script.id = "jsqr-script";
+      script.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js";
+      script.async = true;
+      script.onload = () => setJsQRLoaded(true);
+      document.body.appendChild(script);
+    } else {
+      // Script tag already exists but may still be loading
+      const interval = setInterval(() => {
+        if (window.jsQR) {
+          clearInterval(interval);
+          setJsQRLoaded(true);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [scannerOpen]);
+
+  // Camera scanning effect
+  useEffect(() => {
+    if (!scannerOpen || !jsQRLoaded) return undefined;
 
     let stream;
-    let scanTimer;
+    let scanRequestFrame;
     let cancelled = false;
+    setCameraReady(false);
 
     async function startCameraScanner() {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -40,19 +88,14 @@ const Assets = () => {
         return;
       }
 
-      if (!("BarcodeDetector" in window)) {
-        setScannerError("Live QR scanning is not supported in this browser. Enter the asset code manually.");
-        return;
-      }
-
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
 
         if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
@@ -60,26 +103,72 @@ const Assets = () => {
         if (!video) return;
 
         video.srcObject = stream;
+        video.setAttribute("playsinline", true);
         await video.play();
+        setCameraReady(true);
 
-        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-        scanTimer = window.setInterval(async () => {
-          if (!video.videoWidth || !video.videoHeight) return;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-          try {
-            const codes = await detector.detect(video);
-            const rawValue = codes[0]?.rawValue;
-            if (rawValue) {
-              setScanQuery(rawValue);
-              setScannerError("");
+        const scanFrame = () => {
+          if (cancelled) return;
+
+          if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: "attemptBoth",
+            });
+
+            if (code && code.data) {
+              const scannedValue = code.data.trim();
+              console.log("[Scanner] QR detected:", scannedValue);
+
+              // Search products directly without relying on React state cycle
+              const currentProducts = productsRef.current;
+              let found = null;
+              for (const product of currentProducts) {
+                const asset = product.assets.find(
+                  (a) =>
+                    a.code.toLowerCase() === scannedValue.toLowerCase() ||
+                    a.id.toLowerCase() === scannedValue.toLowerCase() ||
+                    a.code.toLowerCase().includes(scannedValue.toLowerCase())
+                );
+                if (asset) {
+                  found = { product, asset };
+                  break;
+                }
+              }
+
+              if (found) {
+                // Stop camera and show result immediately
+                cancelled = true;
+                if (scanRequestFrame) cancelAnimationFrame(scanRequestFrame);
+                if (stream) stream.getTracks().forEach((t) => t.stop());
+
+                setScannedProductModalAsset(found);
+                setScanQuery(scannedValue);
+                setScannerOpen(false);
+                setScannerError("");
+              } else {
+                // QR detected but no match — show it as feedback
+                setScannerError(`QR scanned: "${scannedValue}" — no matching asset found. Keep scanning or enter manually.`);
+              }
             }
-          } catch (err) {
-            console.error("Camera QR scan failed:", err);
           }
-        }, 700);
+
+          scanRequestFrame = requestAnimationFrame(scanFrame);
+        };
+
+        scanRequestFrame = requestAnimationFrame(scanFrame);
       } catch (err) {
         console.error("Camera access failed:", err);
-        setScannerError("Unable to open camera. Allow camera permission or enter the asset code manually.");
+        setScannerError(
+          "Unable to open camera. Allow camera permission or enter the asset code manually."
+        );
       }
     }
 
@@ -87,10 +176,11 @@ const Assets = () => {
 
     return () => {
       cancelled = true;
-      if (scanTimer) window.clearInterval(scanTimer);
-      if (stream) stream.getTracks().forEach((track) => track.stop());
+      if (scanRequestFrame) cancelAnimationFrame(scanRequestFrame);
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      setCameraReady(false);
     };
-  }, [scannerOpen, setScanQuery]);
+  }, [scannerOpen, jsQRLoaded, setScanQuery]);
 
   const handlePrintQR = (asset) => {
     const printWindow = window.open("", "_blank");
@@ -150,24 +240,24 @@ const Assets = () => {
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      
+
       canvas.width = 400;
       canvas.height = 480;
-      
+
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       ctx.drawImage(img, 50, 20, 300, 300);
-      
+
       ctx.fillStyle = "#000000";
       ctx.font = "bold 18px Arial";
       ctx.textAlign = "center";
       ctx.fillText(`CODE: ${asset.code}`, 200, 360);
-      
+
       ctx.font = "14px Arial";
       ctx.fillStyle = "#555555";
       ctx.fillText(`ID: ${asset.id}`, 200, 400);
-      
+
       const jpgUrl = canvas.toDataURL("image/jpeg", 0.9);
       const link = document.createElement("a");
       link.href = jpgUrl;
@@ -198,10 +288,11 @@ const Assets = () => {
             type="button"
             onClick={() => {
               setScannerError("");
+              setScanQuery("");
               setScannerOpen(true);
             }}
           >
-            Scan QR Code
+            📷 Scan QR Code
           </button>
         </div>
 
@@ -280,45 +371,73 @@ const Assets = () => {
         )}
       </main>
 
+      {/* Camera Scanner Modal */}
       {scannerOpen && (
         <div className="asset-scanner-overlay">
           <section className="asset-scanner">
             <div className="asset-scanner__header">
-              <h2>Scan QR Code</h2>
-              <button type="button" onClick={() => setScannerOpen(false)}>Close</button>
+              <h2>📷 Scan QR Code</h2>
+              <button type="button" onClick={() => setScannerOpen(false)}>✕ Close</button>
             </div>
 
             <div className="camera-scanner">
-              <video ref={videoRef} muted playsInline />
+              <video ref={videoRef} muted playsInline autoPlay style={{ width: "100%", borderRadius: "8px" }} />
               <div className="camera-frame" />
             </div>
+
+            {!cameraReady && !scannerError && (
+              <div style={{ textAlign: "center", color: "#a1a1aa", padding: "8px 0", fontSize: "13px" }}>
+                {jsQRLoaded ? "Starting camera..." : "Loading scanner library..."}
+              </div>
+            )}
+
+            {cameraReady && !scannerError && (
+              <div style={{ textAlign: "center", color: "#22c55e", padding: "8px 0", fontSize: "13px" }}>
+                ✓ Camera active — point at a QR code
+              </div>
+            )}
 
             {scannerError && <div className="scanner-error">{scannerError}</div>}
 
             <label className="manual-scan-field">
-              <span>Manual Asset Code</span>
+              <span>Or enter Asset Code manually</span>
               <input
                 type="text"
                 value={scanQuery}
-                onChange={(event) => setScanQuery(event.target.value)}
+                onChange={(event) => {
+                  setScanQuery(event.target.value);
+                  // If we have a match, show it
+                  if (matchedAsset) {
+                    setScannedProductModalAsset(matchedAsset);
+                    setScannerOpen(false);
+                  }
+                }}
                 placeholder="Paste asset code or asset id"
+                autoFocus={false}
               />
             </label>
 
-            <div className="scan-result">
-              {matchedAsset ? (
-                <>
-                  <strong>{matchedAsset.asset.code}</strong>
-                  <span>{matchedAsset.product.name}</span>
-                  <small>{matchedAsset.asset.id}</small>
-                </>
-              ) : (
-                <span>No matching asset selected.</span>
-              )}
-            </div>
+            {matchedAsset && (
+              <div className="scan-result" style={{ color: "#22c55e" }}>
+                <strong>{matchedAsset.asset.code}</strong>
+                <span>{matchedAsset.product.name}</span>
+                <button
+                  type="button"
+                  style={{ marginTop: "6px", padding: "6px 14px", background: "#7c3aed", border: "none", borderRadius: "6px", color: "#fff", cursor: "pointer" }}
+                  onClick={() => {
+                    setScannedProductModalAsset(matchedAsset);
+                    setScannerOpen(false);
+                  }}
+                >
+                  View Details →
+                </button>
+              </div>
+            )}
           </section>
         </div>
       )}
+
+      {/* QR Image Modal (click on asset row) */}
       {selectedQRAsset && (
         <div className="qr-modal-overlay" onClick={() => setSelectedQRAsset(null)}>
           <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -330,6 +449,20 @@ const Assets = () => {
               <h3>CODE: {selectedQRAsset.code}</h3>
               <span>ID: {selectedQRAsset.id}</span>
             </div>
+            <div className="matched-customer-section">
+              <h4>Customer Rental</h4>
+              {selectedQRAsset.currentOrder ? (
+                <div className="matched-customer-box">
+                  <strong>{selectedQRAsset.currentOrder.customerName}</strong>
+                  <span>{selectedQRAsset.currentOrder.customerEmail}</span>
+                  <span>Order #{selectedQRAsset.currentOrder.rentId}</span>
+                  <span>{formatScanDate(selectedQRAsset.currentOrder.startDate)} - {formatScanDate(selectedQRAsset.currentOrder.endDate)}</span>
+                  <span>Status: {selectedQRAsset.currentOrder.deliveryStatus}</span>
+                </div>
+              ) : (
+                <div className="matched-customer-empty">This asset is not assigned to an active customer rental.</div>
+              )}
+            </div>
             <div className="qr-modal-actions">
               <button className="print-btn" onClick={() => handlePrintQR(selectedQRAsset)}>Print</button>
               <button className="download-btn" onClick={() => handleDownloadQR(selectedQRAsset)}>Download</button>
@@ -337,16 +470,26 @@ const Assets = () => {
           </div>
         </div>
       )}
+
+      {/* Scanned Asset Detail Modal */}
       {scannedProductModalAsset && (
         <div className="product-scan-modal-overlay" onClick={() => { setScannedProductModalAsset(null); setScanQuery(""); }}>
           <div className="product-scan-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="qr-modal-close" onClick={() => { setScannedProductModalAsset(null); setScanQuery(""); }} aria-label="Close modal">&times;</button>
             <div className="product-scan-details">
-              {scannedProductModalAsset.product.image ? (
-                <img className="product-scan-img" src={scannedProductModalAsset.product.image} alt={scannedProductModalAsset.product.name} />
+            {(() => {
+              const raw = scannedProductModalAsset.product.image;
+              const imgSrc = raw
+                ? raw.startsWith("data:")
+                  ? raw
+                  : `data:image/jpeg;base64,${raw}`
+                : null;
+              return imgSrc ? (
+                <img className="product-scan-img" src={imgSrc} alt={scannedProductModalAsset.product.name} />
               ) : (
                 <div className="product-scan-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a22", color: "#71717a", fontSize: "12px" }}>No Image</div>
-              )}
+              );
+            })()}
               <div className="product-scan-info">
                 <h2>{scannedProductModalAsset.product.name}</h2>
                 <div className="scan-badge-row">
@@ -358,7 +501,7 @@ const Assets = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="matched-asset-section">
               <h4>Matched Asset Info</h4>
               <div className="matched-asset-box">
@@ -371,6 +514,22 @@ const Assets = () => {
                   <span>Stock Qty: {scannedProductModalAsset.product.quantity}</span>
                 </div>
               </div>
+            </div>
+
+            <div className="matched-customer-section">
+              <h4>Customer Details</h4>
+              {scannedProductModalAsset.asset.currentOrder ? (
+                <div className="matched-customer-box">
+                  <strong>{scannedProductModalAsset.asset.currentOrder.customerName}</strong>
+                  <span>{scannedProductModalAsset.asset.currentOrder.customerEmail}</span>
+                  <span>Rental Order #{scannedProductModalAsset.asset.currentOrder.rentId}</span>
+                  <span>Rental: {formatScanDate(scannedProductModalAsset.asset.currentOrder.startDate)} - {formatScanDate(scannedProductModalAsset.asset.currentOrder.endDate)}</span>
+                  <span>Delivery: {scannedProductModalAsset.asset.currentOrder.deliveryStatus}</span>
+                  <span>Invoice: {scannedProductModalAsset.asset.currentOrder.invoiceStatus}</span>
+                </div>
+              ) : (
+                <div className="matched-customer-empty">No active customer is assigned to this asset.</div>
+              )}
             </div>
           </div>
         </div>
