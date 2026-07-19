@@ -249,7 +249,6 @@ const Home = () => {
                   </div>
                   <div className="product-info">
                     <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
-                    <div className="price">{product.price} / per {product.duration}</div>
                   </div>
                 </div>
               ))}

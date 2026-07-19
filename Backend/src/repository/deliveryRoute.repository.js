@@ -86,22 +86,22 @@ export async function updateRouteTotals(route_id, distance, duration) {
 export async function updateStopStatus(stop_id, status, actualTime) {
   const pool = getPool();
   
-  // 1. Fetch stop details to retrieve order_id and stop_type
+  // 1. Fetch stop details to retrieve rent_id and stop_type
   const stopResult = await pool.query(
-    "SELECT order_id, stop_type FROM delivery_route_stops WHERE stop_id = $1",
+    "SELECT rent_id, stop_type FROM delivery_route_stops WHERE stop_id = $1",
     [stop_id]
   );
   const stop = stopResult.rows[0];
-
+ 
   if (!stop) return null;
-
+ 
   // 2. Update stop status in delivery_route_stops
   const result = await pool.query(UPDATE_STOP_STATUS_QUERY, [
     status,
     actualTime || new Date(),
     stop_id,
   ]);
-
+ 
   // 3. Update customer order status in renting_orders
   let orderStatus = "pending";
   if (status === "completed") {
@@ -109,8 +109,8 @@ export async function updateStopStatus(stop_id, status, actualTime) {
   } else if (status === "failed") {
     orderStatus = stop.stop_type === "delivery" ? "failed_delivery" : "late_pickup";
   }
-
-  await updateRentingOrderStatus(stop.order_id, orderStatus);
-
+ 
+  await updateRentingOrderStatus(stop.rent_id, orderStatus);
+ 
   return result.rows[0] || null;
 }

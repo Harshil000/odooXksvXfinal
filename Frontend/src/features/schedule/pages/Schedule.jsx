@@ -412,7 +412,7 @@ const Schedule = () => {
                     {routeData.stops.length > 0 && (
                       <div className="stat-card">
                         <a 
-                          href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(routeData.store?.fullAddress)}&destination=${encodeURIComponent(routeData.store?.fullAddress)}&waypoints=${routeData.stops.map(s => encodeURIComponent(`${s.d_address1}, ${s.d_city}`)).join("|")}`}
+                          href={`https://www.google.com/maps/dir/?api=1&origin=${routeData.store?.lat},${routeData.store?.lng}&destination=${routeData.store?.lat},${routeData.store?.lng}&waypoints=${routeData.stops.map(s => `${s.d_lat || 0},${s.d_lng || 0}`).join("|")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="btn-open-gmaps"
@@ -524,11 +524,7 @@ const Schedule = () => {
                           style={{ border: 0, borderRadius: "12px", minHeight: "350px" }}
                           loading="lazy"
                           allowFullScreen
-                          src={`https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(
-                            routeData.store.fullAddress
-                          )}&destination=${encodeURIComponent(
-                            routeData.store.fullAddress
-                          )}&waypoints=${routeData.stops.map((s) => encodeURIComponent(`${s.d_address1}, ${s.d_city}`)).join("|")}`}
+                          src={`https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${routeData.store.lat},${routeData.store.lng}&destination=${routeData.store.lat},${routeData.store.lng}&waypoints=${routeData.stops.map((s) => `${s.d_lat || 0},${s.d_lng || 0}`).join("|")}`}
                         />
                       ) : (
                         <div id="leaflet-map" style={{ width: "100%", height: "100%", minHeight: "350px", borderRadius: "12px" }} />

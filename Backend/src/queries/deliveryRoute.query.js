@@ -44,9 +44,9 @@ RETURNING route_id, driver_id, route_date, status, total_distance_km, total_dura
 `;
 
 export const INSERT_STOP_QUERY = `
-INSERT INTO delivery_route_stops (route_id, order_id, stop_sequence, stop_type, status, estimated_arrival_time)
+INSERT INTO delivery_route_stops (route_id, rent_id, stop_sequence, stop_type, status, estimated_arrival_time)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING stop_id, route_id, order_id, stop_sequence, stop_type, status, estimated_arrival_time;
+RETURNING stop_id, route_id, rent_id, stop_sequence, stop_type, status, estimated_arrival_time;
 `;
 
 export const SELECT_ROUTE_BY_DATE_QUERY = `
@@ -60,7 +60,7 @@ SELECT s.*,
        u.first_name, u.last_name, u.email,
        da.address_line1 as d_address1, da.address_line2 as d_address2, da.city as d_city, da.state as d_state, da.pincode as d_pincode, da.latitude as d_lat, da.longitude as d_lng
 FROM delivery_route_stops s
-LEFT JOIN renting_orders r ON s.order_id = r.rent_id
+LEFT JOIN renting_orders r ON s.rent_id = r.rent_id
 LEFT JOIN rent_plans rp ON r.r_id = rp.r_id
 LEFT JOIN products p ON rp.p_id = p.p_id
 LEFT JOIN users u ON r.u_id = u.u_id

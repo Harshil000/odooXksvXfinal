@@ -126,6 +126,18 @@ const Navbar = ({
         >
           Products
         </a>
+        {!isVendor && user && (
+          <a
+            href="#"
+            className={`nav-link ${activeSection === "history" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/order-history");
+            }}
+          >
+            History
+          </a>
+        )}
         {isVendor && (
           <>
             <a
@@ -320,6 +332,19 @@ const Navbar = ({
               >
                 Products
               </a>
+              {!isVendor && user && (
+                <a
+                  href="#"
+                  className={`drawer-nav-link ${activeSection === "history" ? "active" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowSidebar(false);
+                    navigate("/order-history");
+                  }}
+                >
+                  History
+                </a>
+              )}
               {isVendor && (
                 <>
                   <a

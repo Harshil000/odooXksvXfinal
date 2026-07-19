@@ -5,6 +5,7 @@ import {
   updateRentingOrderStatus,
   deleteRentingOrder,
   getAllEnrichedOrders,
+  getRentingOrdersByUser,
 } from "../repository/order.repository.js";
 import { findVendorById } from "../repository/vendor.repository.js";
 import { sendInvoiceEmail } from "../service/invoice-mail.service.js";
@@ -205,6 +206,18 @@ export async function getDashboardOrdersController(req, res, next) {
     if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
 
     const orders = await getAllEnrichedOrders(vendor.c_id);
+    return res.status(200).json({ orders });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMyOrdersController(req, res, next) {
+  try {
+    const u_id = req.user?.id;
+    if (!u_id) return res.status(401).json({ message: "Unauthorized" });
+
+    const orders = await getRentingOrdersByUser(u_id);
     return res.status(200).json({ orders });
   } catch (error) {
     next(error);

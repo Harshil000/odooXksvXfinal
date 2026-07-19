@@ -6,6 +6,7 @@ import {
   UPDATE_RENTING_ORDER_STATUS_QUERY,
   DELETE_RENTING_ORDER_QUERY,
   SELECT_ENRICHED_ORDERS_BY_COMPANY_QUERY,
+  SELECT_RENTING_ORDERS_BY_USER_QUERY,
 } from "../queries/order.query.js";
 import { sendInvoiceEmail } from "../service/invoice-mail.service.js";
 
@@ -274,5 +275,11 @@ export async function getAllEnrichedOrders(c_id) {
       calculated_penalty,
     };
   });
+}
+
+export async function getRentingOrdersByUser(u_id) {
+  const pool = getPool();
+  const result = await pool.query(SELECT_RENTING_ORDERS_BY_USER_QUERY, [u_id]);
+  return result.rows;
 }
 

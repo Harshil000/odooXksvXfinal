@@ -144,3 +144,13 @@ GROUP BY
   p.p_id
 ORDER BY ro.created_at DESC;
 `;
+
+export const SELECT_RENTING_ORDERS_BY_USER_QUERY = `
+SELECT ro.rent_id, ro.r_id, ro.asset_id, ro.email, ro.start_date, ro.end_date, ro.delivery_status, ro.total, ro.invoice_status, ro.created_at,
+       p.pname as product_name, (SELECT image_base64 FROM product_images pi WHERE pi.p_id = p.p_id LIMIT 1) as image, rp.price as plan_price, rp.deposit, rp.duration_type
+FROM renting_orders ro
+JOIN rent_plans rp ON ro.r_id = rp.r_id
+JOIN products p ON rp.p_id = p.p_id
+WHERE ro.u_id = $1
+ORDER BY ro.created_at DESC;
+`;
