@@ -8,8 +8,6 @@ import {
   UPDATE_QUOTATION_GROUP_CONFIRMED_QUERY,
   UPDATE_QUOTATION_CONVERTED_QUERY,
   SELECT_FREE_ASSET_QUERY,
-  SELECT_ANY_ASSET_QUERY,
-  INSERT_FALLBACK_ASSET_QUERY,
   SELECT_QUOTATION_RAW_GROUP_QUERY,
   SELECT_USER_BY_EMAIL_QUERY,
   INSERT_GUEST_USER_QUERY,
@@ -21,23 +19,15 @@ import {
 
 /**
  * Finds a free asset for a product in the given rental window.
- * Falls back to any asset, or creates a mock asset if none exist, ensuring checkout never blocks.
+ * Only returns assets that are not already booked in the requested window.
  */
-async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
+async function findFreeAsset(p_id, startDate, endDate, client) {
   const res = await client.query(SELECT_FREE_ASSET_QUERY, [p_id, startDate, endDate]);
   if (res.rows[0]) {
     return res.rows[0].asset_id;
   }
 
-  const anyAssetRes = await client.query(SELECT_ANY_ASSET_QUERY, [p_id]);
-  if (anyAssetRes.rows[0]) {
-    return anyAssetRes.rows[0].asset_id;
-  }
-
-  // Auto-generate fallback asset
-  const fallbackQr = `FALLBACK-${p_id.slice(0, 8)}-${Date.now()}`;
-  const createRes = await client.query(INSERT_FALLBACK_ASSET_QUERY, [p_id, fallbackQr]);
-  return createRes.rows[0].asset_id;
+  return null;
 }
 
 export async function createQuotation(data) {
@@ -176,23 +166,17 @@ export async function convertQuotationToOrder(q_id, addressData = {}) {
       // Fetch security deposit
       const planRes = await client.query(SELECT_RENT_PLAN_DEPOSIT_QUERY, [quote.r_id]);
       const depositAmount = planRes.rows[0] ? Number(planRes.rows[0].deposit || 0) : 0;
+      const quantity = Math.max(1, Number(quote.quantity || 1));
+      const totalPerUnit = Number(quote.total || 0) / quantity;
+      const depositPerUnit = depositAmount / quantity;
 
-      const quoteQty = Number(quote.quantity || 1);
-      const unitTotal = Number(quote.total || 0) / quoteQty;
+      const ordersBeforeThisQuote = createdOrders.length;
 
-      // Verify stock availability with lock
-      const productRes = await client.query("SELECT quantity, pname FROM products WHERE p_id = $1 FOR UPDATE;", [quote.p_id]);
-      const product = productRes.rows[0];
-      if (!product) {
-        throw new Error("Product not found");
-      }
-      if (Number(product.quantity || 0) < quoteQty) {
-        throw new Error(`Insufficient stock for product "${product.pname}". Available: ${product.quantity}, requested: ${quoteQty}`);
-      }
-
-      for (let q = 0; q < quoteQty; q++) {
-        // Locate or create a free asset
-        const assetId = await findOrCreateFreeAsset(quote.p_id, quote.start_date, quote.end_date, client);
+      for (let unitIndex = 0; unitIndex < quantity; unitIndex += 1) {
+        const assetId = await findFreeAsset(quote.p_id, quote.start_date, quote.end_date, client);
+        if (!assetId) {
+          throw new Error(`No available assets for ${quote.product_name || "this product"} in the selected rental period`);
+        }
 
         // Insert Renting Order
         const orderRes = await client.query(INSERT_RENTING_ORDER_QUERY, [
@@ -206,28 +190,18 @@ export async function convertQuotationToOrder(q_id, addressData = {}) {
           quote.end_date,
           "reserved",
           "confirmed",
-          unitTotal, // total (rent charge only per unit)
+          totalPerUnit,
           "pending",
-          depositAmount
+          depositPerUnit
         ]);
-        const createdOrder = orderRes.rows[0];
-
-        // Update Quotation Status to 'converted'
-        await client.query(UPDATE_QUOTATION_CONVERTED_QUERY, [
-          createdOrder.rent_id,
-          quote.q_id
-        ]);
-
-        createdOrders.push(createdOrder);
-
-        // Decrement available product quantity by 1
-        await client.query(
-          `UPDATE products 
-           SET quantity = GREATEST(0, quantity - 1) 
-           WHERE p_id = $1`,
-          [quote.p_id]
-        );
+        createdOrders.push(orderRes.rows[0]);
       }
+
+      // Update Quotation Status to 'converted' (reference the first order created for this quote)
+      await client.query(UPDATE_QUOTATION_CONVERTED_QUERY, [
+        createdOrders[ordersBeforeThisQuote].rent_id,
+        quote.q_id
+      ]);
     }
 
     await client.query("COMMIT");

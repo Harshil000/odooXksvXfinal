@@ -203,6 +203,19 @@ export async function createAssetController(req, res, next) {
     if (!p_id) return res.status(400).json({ message: "Product ID (p_id) is required" });
     if (!qr) return res.status(400).json({ message: "QR string is required" });
 
+    // Enforce quantity cap
+    const { getPool } = await import("../config/database.js");
+    const pool = getPool();
+    const prodRes = await pool.query("SELECT quantity FROM products WHERE p_id = $1", [p_id]);
+    const quantity = prodRes.rows[0]?.quantity || 0;
+
+    const countRes = await pool.query("SELECT COUNT(*) as count FROM assets WHERE p_id = $1", [p_id]);
+    const currentCount = parseInt(countRes.rows[0]?.count || 0);
+
+    if (currentCount >= quantity) {
+      return res.status(400).json({ message: `Cannot generate more assets. Maximum limit of ${quantity} reached.` });
+    }
+
     const asset = await createAsset(p_id, qr);
     return res.status(201).json({ message: "Asset created successfully", asset });
   } catch (error) {

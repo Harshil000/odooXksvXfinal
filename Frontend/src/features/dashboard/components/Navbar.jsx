@@ -23,7 +23,6 @@ const Navbar = ({
   const displayName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Vendor"
     : "Vendor";
-
   const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
   // Cart item count — only for storefront (non-vendor) users
@@ -179,6 +178,16 @@ const Navbar = ({
         )}
       </div>
 
+      {!isVendor && user && (
+        <button
+          type="button"
+          className={`nav-history-btn ${activeSection === "history" ? "active" : ""}`}
+          onClick={() => navigate("/order-history")}
+        >
+          Order History
+        </button>
+      )}
+
       {/* Search */}
       <div className="nav-search">
         <input
@@ -318,7 +327,7 @@ const Navbar = ({
                   <a
                     href="#"
                     className={`drawer-nav-link ${activeSection === "quotation" ? "active" : ""}`}
-                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard/new-order"); }}
+                    onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/dashboard/quotation"); }}
                   >
                     Quotation
                   </a>
@@ -399,6 +408,22 @@ const Navbar = ({
                   </a>
                 </>
               )}
+              {!isVendor && (
+                <a
+                  href="#"
+                  className={`drawer-nav-link ${activeSection === "history" ? "active" : ""}`}
+                  onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/order-history"); }}
+                >
+                  Order History
+                </a>
+              )}
+              <a 
+                href="#" 
+                className={`drawer-nav-link ${activeSection === "settings" ? "active" : ""}`}
+                onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/profile"); }}
+              >
+                Settings
+              </a>
             </div>
           </div>
         </div>

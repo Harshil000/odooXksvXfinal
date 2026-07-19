@@ -122,7 +122,10 @@ const Home = () => {
       if (!isAdmin && product.to_publish === false) return false;
     }
 
-    // 3. Dynamic attributes sidebar filter
+    // 3. Out-of-stock — hide completely from customers when no units are available
+    if (!isAdmin && product.outOfStock) return false;
+
+    // 4. Dynamic attributes sidebar filter
     for (const [attrName, selectedValue] of Object.entries(selectedFilters)) {
       if (selectedValue && selectedValue !== 'All') {
         const hasAttr = (attributes || []).some(attr =>
@@ -155,7 +158,7 @@ const Home = () => {
             {Object.keys(groupedFilters).map(attrName => (
               <div className="filter-group" key={attrName}>
                 <label>{attrName}</label>
-                <select 
+                <select
                   value={selectedFilters[attrName] || 'All'}
                   onChange={(e) => setSelectedFilters({
                     ...selectedFilters,
@@ -230,7 +233,12 @@ const Home = () => {
                       <div className="unpublished-badge">Unpublished</div>
                     )}
 
-                    {product.outOfStock ? (
+                    {product.lowOnStock && (
+                      <div className="low-stock-badge">Low on stock</div>
+                    )}
+
+                    {/* Admin sees out-of-stock badge; customers are filtered out before reaching here */}
+                    {isAdmin && product.outOfStock ? (
                       <div className="out-of-stock-badge">Out of stock</div>
                     ) : (
                       <img src={product.image} alt="Product" />
@@ -246,7 +254,6 @@ const Home = () => {
                   </div>
                   <div className="product-info">
                     <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
-                    <div className="price">{product.price} / per {product.duration}</div>
                   </div>
                 </div>
               ))}

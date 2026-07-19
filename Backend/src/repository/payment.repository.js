@@ -1,6 +1,5 @@
 import { getPool } from "../config/database.js";
 import { INSERT_PAYMENT_QUERY } from "../queries/payment.query.js";
-import { createAddress } from "./address.repository.js";
 
 const INSERT_ORDER_WITH_PAYMENT_QUERY = `
   INSERT INTO renting_orders (
@@ -19,9 +18,9 @@ const DELETE_USER_CART_QUERY = `
 
 /**
  * Finds a free asset for a product in the given rental window.
- * Falls back to any asset, or creates a mock asset if none exist, ensuring checkout never blocks.
+ * Only returns assets that are not already booked in the requested window.
  */
-async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
+async function findFreeAsset(p_id, startDate, endDate, client) {
   const freeAssetQuery = `
     SELECT a.asset_id 
     FROM assets a
@@ -32,6 +31,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
         WHERE ro.delivery_status NOT IN ('returned', 'cancelled')
           AND NOT (ro.end_date <= $2 OR ro.start_date >= $3)
       )
+    ORDER BY a.asset_id
     LIMIT 1;
   `;
   const res = await client.query(freeAssetQuery, [p_id, startDate, endDate]);
@@ -39,21 +39,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
     return res.rows[0].asset_id;
   }
 
-  const anyAssetQuery = `SELECT asset_id FROM assets WHERE p_id = $1 LIMIT 1;`;
-  const anyAssetRes = await client.query(anyAssetQuery, [p_id]);
-  if (anyAssetRes.rows[0]) {
-    return anyAssetRes.rows[0].asset_id;
-  }
-
-  // Auto-generate fallback asset
-  const createAssetQuery = `
-    INSERT INTO assets (p_id, qr) 
-    VALUES ($1, $2) 
-    RETURNING asset_id;
-  `;
-  const fallbackQr = `FALLBACK-${p_id.slice(0, 8)}-${Date.now()}`;
-  const createRes = await client.query(createAssetQuery, [p_id, fallbackQr]);
-  return createRes.rows[0].asset_id;
+  return null;
 }
 
 /**
@@ -130,7 +116,10 @@ export async function saveCheckoutTransaction({
       }
 
       for (let q = 0; q < itemQty; q++) {
-        const asset_id = await findOrCreateFreeAsset(item.p_id, item.startDate, item.endDate, client);
+        const asset_id = await findFreeAsset(item.p_id, item.startDate, item.endDate, client);
+        if (!asset_id) {
+          throw new Error(`No available assets for product in the selected rental period`);
+        }
 
         // 2.1 Insert Renting Order
         const orderRes = await client.query(INSERT_ORDER_WITH_PAYMENT_QUERY, [
@@ -153,7 +142,23 @@ export async function saveCheckoutTransaction({
         const order = orderRes.rows[0];
         createdOrders.push(order);
 
-        // 2.2 Insert Deposit Payment (Audit Trail)
+        // 2.2 Insert Rental Payment (Audit Trail)
+        if (unitRent > 0) {
+          await client.query(INSERT_PAYMENT_QUERY, [
+            order.rent_id,
+            u_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            unitRent,
+            "INR",
+            false, // is_deposit
+            "captured", // status
+            method || "card",
+          ]);
+        }
+
+        // 2.3 Insert Deposit Payment (Audit Trail)
         if (unitDeposit > 0) {
           await client.query(INSERT_PAYMENT_QUERY, [
             order.rent_id,
@@ -169,7 +174,7 @@ export async function saveCheckoutTransaction({
           ]);
         }
 
-        // 2.3 Decrement available product quantity by 1
+        // 2.4 Decrement available product quantity by 1
         await client.query(
           `UPDATE products 
            SET quantity = GREATEST(0, quantity - 1) 

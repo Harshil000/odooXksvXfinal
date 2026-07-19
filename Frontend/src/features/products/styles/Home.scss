@@ -304,6 +304,21 @@
       font-size: 0.9rem;
     }
 
+    .low-stock-badge {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      z-index: 10;
+      background: rgba(250, 204, 21, 0.92);
+      border: 1px solid rgba(250, 204, 21, 0.55);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
     .unpublished-badge {
       position: absolute;
       background: rgba(248, 113, 113, 0.9);
