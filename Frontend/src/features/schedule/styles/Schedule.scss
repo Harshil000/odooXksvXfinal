@@ -850,3 +850,7 @@ $late-delivery: #f472b6;
     grid-template-columns: 1fr;
   }
 }
+
+.leaflet-routing-container {
+  display: none !important;
+}

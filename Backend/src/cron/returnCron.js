@@ -10,7 +10,7 @@ import { sendReturnReminderEmail, sendOverduePenaltyEmail } from "../service/mai
 export function initCron() {
   console.log("[Cron] Initializing renting return status check cron job (1-minute intervals)...");
 
-  cron.schedule("0 * * * * *", async () => {
+  cron.schedule("0 0 * * * *", async () => {
     console.log("[Cron] Running renting return status check...");
     try {
       const pool = getPool();

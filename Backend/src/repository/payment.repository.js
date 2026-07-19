@@ -145,7 +145,7 @@ export async function saveCheckoutTransaction({
           "reserved", // delivery_status
           "nothing_to_invoice", // invoice_status
           unitRent, // total (rent charge only)
-          "captured", // payment_status
+          "paid", // payment_status
           unitDeposit, // deposit_amount
           0, // deposit_refunded_amount
         ]);

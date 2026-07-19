@@ -33,7 +33,7 @@ export async function initQdrantCollection() {
     if (exists) {
       // Check collection details to ensure size matches
       const info = await qdrant.getCollection(COLLECTION);
-      const currentSize = info.config?.vectors?.size;
+      const currentSize = info.config?.params?.vectors?.size;
       
       if (currentSize !== VECTOR_SIZE) {
         console.log(`[Qdrant] Dimension mismatch (current: ${currentSize}d, target: ${VECTOR_SIZE}d). Re-creating collection...`);

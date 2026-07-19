@@ -27,7 +27,7 @@ function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 // Helper: Geocode via OpenStreetMap Nominatim with a fallback
-async function geocodeAddress(addressStr, fallbackLat, fallbackLng) {
+async function geocodeAddress(addressStr, fallbackLat, fallbackLng, city, state, pincode) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressStr)}`;
     const res = await fetch(url, {
@@ -43,10 +43,33 @@ async function geocodeAddress(addressStr, fallbackLat, fallbackLng) {
   } catch (err) {
     console.error(`[Geocoder] Failed for: "${addressStr}". Message: ${err.message}`);
   }
-  // Safe mock coordinates offset from fallback to prevent stack collapse
+
+  // Fallback 1: Try geocoding city, state, pincode if provided
+  if (city || state || pincode) {
+    try {
+      const fallbackStr = `${city || ""}, ${state || ""} ${pincode || ""}`.trim().replace(/^,\s*|,\s*$/g, "");
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(fallbackStr)}`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "RentalManagementSystem/1.0" },
+      });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+        };
+      }
+    } catch (err) {
+      console.error(`[Geocoder] City fallback failed. Message: ${err.message}`);
+    }
+  }
+
+  // Fallback 2: Default coordinates (Ahmedabad center 23.0225, 72.5714)
+  const defaultLat = fallbackLat || 23.0225;
+  const defaultLng = fallbackLng || 72.5714;
   return {
-    latitude: fallbackLat + (Math.random() - 0.5) * 0.05,
-    longitude: fallbackLng + (Math.random() - 0.5) * 0.05,
+    latitude: defaultLat + (Math.random() - 0.5) * 0.01,
+    longitude: defaultLng + (Math.random() - 0.5) * 0.01,
   };
 }
 
@@ -65,8 +88,8 @@ export async function fetchStoreAndGeocode() {
   }
 
   const fullAddress = `${store.address_line1}, ${store.city}, ${store.state} ${store.pincode}`;
-  // Default store location coordinate: Mumbai Center (19.0760, 72.8777)
-  const coords = await geocodeAddress(fullAddress, 19.076, 72.8777);
+  // Default store location coordinate: Ahmedabad Center (23.0225, 72.5714)
+  const coords = await geocodeAddress(fullAddress, 23.0225, 72.5714, store.city, store.state, store.pincode);
 
   await updateStoreCoordinates(store.c_id, coords.latitude, coords.longitude);
 
@@ -107,7 +130,7 @@ export async function optimizeDailyRouteService(driverId, dateStr) {
 
       if (!lat || !lng || lat === 0 || lng === 0) {
         const fullAddress = `${order.d_address1 || ""}, ${order.d_city || ""}, ${order.d_state || ""} ${order.d_pincode || ""}`;
-        const coords = await geocodeAddress(fullAddress, store.lat, store.lng);
+        const coords = await geocodeAddress(fullAddress, store.lat, store.lng, order.d_city, order.d_state, order.d_pincode);
         lat = coords.latitude;
         lng = coords.longitude;
 
