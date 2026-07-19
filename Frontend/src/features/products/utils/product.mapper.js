@@ -18,6 +18,7 @@ export function mapProductToCard(product) {
     lowOnStock: availableStock > 0 && availableStock < 5,
     pname: product.pname,
     to_publish: product.to_publish,
+    c_id: product.c_id,
   };
 }
 

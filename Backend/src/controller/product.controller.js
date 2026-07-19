@@ -11,6 +11,7 @@ import {
   getAssetsByProductId,
   getProductVariants,
   getProductsAttributes,
+  syncProductAssets,
 } from "../repository/product.repository.js";
 import { indexProduct, searchProducts } from "../service/search.service.js";
 import { deleteProductVector } from "../service/qdrant.service.js";
@@ -28,6 +29,9 @@ export async function createProductController(req, res, next) {
 
     const productData = { pname, description, to_publish, quantity, product_type, sales_price, cost_price };
     const product = await createProduct(c_id, productData);
+
+    // Sync assets automatically
+    await syncProductAssets(product.p_id);
 
     // Handle optional base64 images in the same request for convenience
     const createdImages = [];
@@ -99,6 +103,9 @@ export async function updateProductController(req, res, next) {
     const product = await updateProduct(p_id, productData);
 
     if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Sync assets automatically
+    await syncProductAssets(p_id);
 
     // Fire-and-forget: re-index the updated product in Qdrant
     indexProduct(product).catch((err) =>

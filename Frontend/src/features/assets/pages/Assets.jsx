@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Navbar from "../../dashboard/components/Navbar";
 import { useAssets } from "../hooks/useAssets";
+import { normalizeAssetCode } from "../utils/qr.util";
 import "../styles/Assets.scss";
 
 const Assets = () => {
@@ -35,6 +36,40 @@ const Assets = () => {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+  };
+
+  const findScannedAsset = (value) => {
+    const normalizedValue = normalizeAssetCode(value);
+    if (!normalizedValue) return null;
+
+    for (const product of productsRef.current) {
+      const asset = product.assets.find((item) => {
+        const normalizedCode = item.normalizedCode || normalizeAssetCode(item.code);
+        const normalizedId = normalizeAssetCode(item.id);
+        return normalizedCode === normalizedValue || normalizedId === normalizedValue;
+      });
+      if (asset) return { product, asset };
+    }
+
+    return null;
+  };
+
+  const scanCanvasForQr = (canvas, ctx, video, cropScale = 1) => {
+    const sourceWidth = video.videoWidth;
+    const sourceHeight = video.videoHeight;
+    const cropWidth = Math.floor(sourceWidth * cropScale);
+    const cropHeight = Math.floor(sourceHeight * cropScale);
+    const sourceX = Math.floor((sourceWidth - cropWidth) / 2);
+    const sourceY = Math.floor((sourceHeight - cropHeight) / 2);
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    ctx.drawImage(video, sourceX, sourceY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    const imageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
+    return window.jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "attemptBoth",
     });
   };
 
@@ -114,34 +149,15 @@ const Assets = () => {
           if (cancelled) return;
 
           if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-            const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: "attemptBoth",
-            });
+            const code = [1, 0.82, 0.64, 0.46]
+              .map((cropScale) => scanCanvasForQr(canvas, ctx, video, cropScale))
+              .find(Boolean);
 
             if (code && code.data) {
               const scannedValue = code.data.trim();
               console.log("[Scanner] QR detected:", scannedValue);
 
-              // Search products directly without relying on React state cycle
-              const currentProducts = productsRef.current;
-              let found = null;
-              for (const product of currentProducts) {
-                const asset = product.assets.find(
-                  (a) =>
-                    a.code.toLowerCase() === scannedValue.toLowerCase() ||
-                    a.id.toLowerCase() === scannedValue.toLowerCase() ||
-                    a.code.toLowerCase().includes(scannedValue.toLowerCase())
-                );
-                if (asset) {
-                  found = { product, asset };
-                  break;
-                }
-              }
+              const found = findScannedAsset(scannedValue);
 
               if (found) {
                 // Stop camera and show result immediately
@@ -405,10 +421,11 @@ const Assets = () => {
                 type="text"
                 value={scanQuery}
                 onChange={(event) => {
-                  setScanQuery(event.target.value);
-                  // If we have a match, show it
-                  if (matchedAsset) {
-                    setScannedProductModalAsset(matchedAsset);
+                  const value = event.target.value;
+                  setScanQuery(value);
+                  const found = findScannedAsset(value);
+                  if (found) {
+                    setScannedProductModalAsset(found);
                     setScannerOpen(false);
                   }
                 }}

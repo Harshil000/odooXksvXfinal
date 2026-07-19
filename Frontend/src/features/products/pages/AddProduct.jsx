@@ -7,6 +7,7 @@ import { saveProduct, loadProductDetails, editProduct } from '../services/produc
 import { loadProductRentPlans, saveRentPlans } from '../../rentPlans/services/rentPlan.service';
 import { buildProductPayload } from '../utils/productPayload.util';
 import { createProductImage } from '../api/product.api';
+import Navbar from '../../dashboard/components/Navbar';
 import '../styles/AddProduct.scss';
 
 const AddProduct = () => {
@@ -223,7 +224,9 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="add-product-container">
+    <div className="dashboard-page">
+      <Navbar activeSection="products" />
+      <div className="add-product-container">
       <div className="header-actions">
         <button className="btn-cancel" onClick={() => navigate('/')}>Discard</button>
         <button className="btn-save" onClick={handleSave}>Save</button>
@@ -464,6 +467,7 @@ const AddProduct = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 

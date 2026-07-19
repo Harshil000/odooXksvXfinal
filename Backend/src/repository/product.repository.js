@@ -128,23 +128,41 @@ export async function createAsset(p_id, qr) {
   return result.rows[0];
 }
 
-export async function getAssetsByProductId(p_id) {
+export async function syncProductAssets(p_id) {
   const pool = getPool();
   
-  // Fetch product quantity
-  const prodRes = await pool.query("SELECT quantity FROM products WHERE p_id = $1", [p_id]);
-  const quantity = prodRes.rows[0]?.quantity || 0;
+  // 1. Fetch product quantity and name
+  const prodRes = await pool.query("SELECT quantity, pname FROM products WHERE p_id = $1", [p_id]);
+  if (!prodRes.rows[0]) return;
+  const { quantity, pname } = prodRes.rows[0];
   
-  const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
-  const currentAssets = result.rows;
-
+  // 2. Fetch current assets (ordered by asset_id or order of creation)
+  const assetsRes = await pool.query("SELECT asset_id, qr FROM assets WHERE p_id = $1 ORDER BY asset_id", [p_id]);
+  const currentAssets = assetsRes.rows;
+  
   if (currentAssets.length > quantity) {
+    // Delete excess assets
     const toDelete = currentAssets.slice(quantity).map(a => a.asset_id);
     await pool.query("DELETE FROM assets WHERE asset_id = ANY($1::uuid[])", [toDelete]);
-    return currentAssets.slice(0, quantity);
+  } else if (currentAssets.length < quantity) {
+    // Create missing assets
+    const missingCount = quantity - currentAssets.length;
+    for (let i = 0; i < missingCount; i++) {
+      const sequence = currentAssets.length + i + 1;
+      const paddedSequence = String(sequence).padStart(6, '0');
+      const pidPrefix = p_id.slice(0, 8).toUpperCase();
+      const pnamePrefix = pname.slice(0, 4).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      const qr = `PRD-${pidPrefix}-${pnamePrefix}-${paddedSequence}`;
+      await pool.query(INSERT_ASSET_QUERY, [p_id, qr]);
+    }
   }
-  
-  return currentAssets;
+}
+
+export async function getAssetsByProductId(p_id) {
+  const pool = getPool();
+  await syncProductAssets(p_id);
+  const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
+  return result.rows;
 }
 
 export async function getProductVariants(pname, c_id) {

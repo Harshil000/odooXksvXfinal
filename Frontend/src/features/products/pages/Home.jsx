@@ -16,7 +16,7 @@ const Home = () => {
   const { products, attributes, loading, error, hasMore, loadMore } = useProducts();
   const { totals } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  
+
   // Debounced search query states
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -116,6 +116,9 @@ const Home = () => {
   const baseProducts = searchResults !== null ? searchResults : (products || []);
 
   const filteredProducts = baseProducts.filter((product) => {
+    // 0. Owner filter (Vendors only see self-created products)
+    if (user && user.c_id && product.c_id !== user.c_id) return false;
+
     // When in search mode, backend already filtered by query — just apply UI filters
     if (searchResults === null) {
       // 2. Publish status filter (Customers only see published ones)
@@ -143,10 +146,10 @@ const Home = () => {
   return (
     <div className="home-container dashboard-page">
       {/* Integrated Navbar */}
-      <Navbar 
-        activeSection="products" 
-        searchQuery={searchInput} 
-        onSearchChange={setSearchInput} 
+      <Navbar
+        activeSection="products"
+        searchQuery={searchInput}
+        onSearchChange={setSearchInput}
         searchPlaceholder="Search products..."
         onCartOpen={() => setCartOpen(true)}
       />
@@ -173,7 +176,7 @@ const Home = () => {
               </div>
             ))}
             {Object.keys(groupedFilters).length === 0 && (
-              <p className="no-filters-msg" style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>No attributes to filter.</p>
+              <p className="no-filters-msg" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No attributes to filter.</p>
             )}
           </aside>
         )}
@@ -200,27 +203,27 @@ const Home = () => {
           ) : (
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <div 
-                  key={product.id} 
-                  className="product-card" 
+                <div
+                  key={product.id}
+                  className="product-card"
                   onClick={() => navigate(`/product/${product.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="image-container">
                     {isAdmin && (
                       <div className="admin-card-actions">
-                        <button 
-                          className="admin-edit-btn" 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            navigate(`/edit-product/${product.id}`); 
+                        <button
+                          className="admin-edit-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/edit-product/${product.id}`);
                           }}
                           title="Edit Product"
                         >
                           ✏️
                         </button>
-                        <button 
-                          className="admin-delete-btn" 
+                        <button
+                          className="admin-delete-btn"
                           onClick={(e) => handleDeleteProduct(e, product.id)}
                           title="Delete Product"
                         >
@@ -243,7 +246,7 @@ const Home = () => {
                     ) : (
                       <img src={product.image} alt="Product" />
                     )}
-                    
+
                     {product.colors && product.colors.length > 0 && (
                       <div className="variants">
                         {product.colors.map((color, idx) => (
@@ -253,7 +256,7 @@ const Home = () => {
                     )}
                   </div>
                   <div className="product-info">
-                    <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>{product.pname}</div>
                   </div>
                 </div>
               ))}

@@ -117,10 +117,7 @@ const ProductDetail = () => {
     );
   }
 
-  const selectedPlan = rentPlans.find(p => p.r_id === selectedPlanId);
-  const priceLabel = selectedPlan 
-    ? `(₹${selectedPlan.price} / per ${selectedPlan.duration_type})` 
-    : `(₹${product.sales_price || product.cost_price || 0} / per ${product.duration || 'month'})`;
+  const priceLabel = `Price: ₹${product.sales_price || product.cost_price || 0}`;
 
   // Parse and group all attributes across all variants of this product name
   const groupedAttributes = {};
@@ -296,7 +293,6 @@ const ProductDetail = () => {
                 </table>
               </div>
             )}
-
             <div className="action-box">
               <div className="rental-period">
                 <label>Rental Period (IST)</label>
@@ -346,49 +342,14 @@ const ProductDetail = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="description-section">
               <h3>Description</h3>
               <p>{product.description || 'No description available for this product.'}</p>
             </div>
-            
-            {rentPlans.length > 0 && (
-              <div className="rent-plans-section">
-                <h3>Rental Plans</h3>
-                <table className="rent-plans-table">
-                  <thead>
-                    <tr>
-                      <th style={{width: '40px'}}>Select</th>
-                      <th>Duration</th>
-                      <th>Price</th>
-                      <th>Deposit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rentPlans.map(plan => (
-                      <tr key={plan.r_id} onClick={() => setSelectedPlanId(plan.r_id)} style={{cursor: 'pointer'}}>
-                        <td>
-                          <input 
-                            type="radio" 
-                            name="rent_plan" 
-                            checked={selectedPlanId === plan.r_id} 
-                            onChange={() => setSelectedPlanId(plan.r_id)} 
-                            style={{cursor: 'pointer'}}
-                          />
-                        </td>
-                        <td style={{ textTransform: 'capitalize' }}>{plan.duration_type}</td>
-                        <td>₹{plan.price}</td>
-                        <td>₹{plan.deposit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
       </main>
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 };

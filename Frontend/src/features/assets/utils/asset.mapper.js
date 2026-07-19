@@ -1,4 +1,4 @@
-import { readAssetCodeFromQr, createAssetQrBase64 } from "./qr.util";
+import { readAssetCodeFromQr, createAssetQrBase64, normalizeAssetCode } from "./qr.util";
 
 export function mapProductWithAssets(product, assets) {
   return {
@@ -15,6 +15,7 @@ export function mapProductWithAssets(product, assets) {
         productId: asset.p_id,
         qr: freshQr,
         code,
+        normalizedCode: normalizeAssetCode(code),
         currentOrder: asset.rent_id ? {
           rentId: asset.rent_id,
           customerId: asset.customer_id,

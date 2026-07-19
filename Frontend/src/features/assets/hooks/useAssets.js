@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createAssetsForProduct, createMissingAssetsForProduct, loadAssetInventory } from "../services/assets.service";
 import { mapProductWithAssets } from "../utils/asset.mapper";
+import { normalizeAssetCode } from "../utils/qr.util";
 
 export function useAssets() {
   const [products, setProducts] = useState([]);
@@ -91,14 +92,14 @@ export function useAssets() {
     }
   };
 
-  const query = scanQuery.trim().toLowerCase();
+  const query = normalizeAssetCode(scanQuery);
   let matchedAsset = null;
 
   if (query) {
     for (const product of products) {
       const asset = product.assets.find((item) => (
-        item.code.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query)
+        (item.normalizedCode || normalizeAssetCode(item.code)) === query ||
+        normalizeAssetCode(item.id) === query
       ));
       if (asset) {
         matchedAsset = { product, asset };
