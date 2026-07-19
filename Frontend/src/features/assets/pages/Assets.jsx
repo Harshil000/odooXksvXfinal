@@ -314,7 +314,7 @@ const Assets = () => {
                   <div className="asset-product-card__header">
                     <div>
                       <h2>{product.name}</h2>
-                      <span>{product.productType || "Product"} · DB quantity: {product.quantity}</span>
+                      <span>{product.productType || "Product"} · Qty: {product.quantity}</span>
                     </div>
                     <div className="asset-counts">
                       <strong>{product.assets.length}</strong>

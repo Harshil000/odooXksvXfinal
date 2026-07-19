@@ -163,6 +163,27 @@ $status-nothing-bg: rgba(113, 113, 122, 0.15);
     }
   }
 
+  .nav-history-btn {
+    flex-shrink: 0;
+    border: 1px solid rgba(192, 132, 252, 0.35);
+    border-radius: $radius;
+    background: rgba(192, 132, 252, 0.14);
+    color: $text-primary;
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover,
+    &.active {
+      background: $accent;
+      border-color: $accent;
+      color: #111;
+    }
+  }
+
   .nav-search {
     position: relative;
     flex: 1;

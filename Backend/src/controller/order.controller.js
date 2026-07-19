@@ -5,6 +5,7 @@ import {
   updateRentingOrderStatus,
   deleteRentingOrder,
   getAllEnrichedOrders,
+  getRentingOrderHistoryByUserId,
 } from "../repository/order.repository.js";
 import { findVendorById } from "../repository/vendor.repository.js";
 import { sendInvoiceEmail } from "../service/invoice-mail.service.js";
@@ -14,6 +15,27 @@ import { createAddress, findAddressesByUserId } from "../repository/address.repo
 // ==========================================
 // RENTING ORDERS
 // ==========================================
+
+const START_DELIVERY_STATUSES = ["reserved", "pending", "quotation", "draft"];
+const DELIVERY_STATUS_LABELS = {
+  reserved: "Reserved",
+  pending: "Reserved",
+  quotation: "Reserved",
+  draft: "Reserved",
+  picked_up: "Picked Up",
+  returned: "Returned",
+  cancelled: "Cancelled",
+};
+
+function getAllowedDeliveryStatusTransitions(status) {
+  if (START_DELIVERY_STATUSES.includes(status)) return ["picked_up", "cancelled"];
+  if (status === "picked_up") return ["returned"];
+  return [];
+}
+
+function isValidDeliveryStatusTransition(currentStatus, nextStatus) {
+  return currentStatus === nextStatus || getAllowedDeliveryStatusTransitions(currentStatus).includes(nextStatus);
+}
 
 export async function createOrderController(req, res, next) {
   try {
@@ -163,6 +185,22 @@ export async function getOrderByIdController(req, res, next) {
   }
 }
 
+export async function getMyOrderHistoryController(req, res, next) {
+  try {
+    if (req.user?.role) {
+      return res.status(403).json({ message: "Order history is available for customer accounts only" });
+    }
+
+    const userId = req.user?.id || req.user?.u_id;
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+    const orders = await getRentingOrderHistoryByUserId(userId);
+    return res.status(200).json({ orders });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateOrderStatusController(req, res, next) {
   try {
     const { rent_id } = req.params;
@@ -171,8 +209,22 @@ export async function updateOrderStatusController(req, res, next) {
     if (!rent_id) return res.status(400).json({ message: "Order ID is required" });
     if (!delivery_status) return res.status(400).json({ message: "Delivery status is required" });
 
+    const currentOrder = await getRentingOrderById(rent_id);
+    if (!currentOrder) return res.status(404).json({ message: "Order not found" });
+
+    if (!isValidDeliveryStatusTransition(currentOrder.delivery_status, delivery_status)) {
+      const allowed = getAllowedDeliveryStatusTransitions(currentOrder.delivery_status)
+        .map((status) => DELIVERY_STATUS_LABELS[status] || status)
+        .join(" or ");
+
+      return res.status(400).json({
+        message: allowed
+          ? `${DELIVERY_STATUS_LABELS[currentOrder.delivery_status] || currentOrder.delivery_status} can only move to ${allowed}`
+          : `${DELIVERY_STATUS_LABELS[currentOrder.delivery_status] || currentOrder.delivery_status} cannot move to another status`,
+      });
+    }
+
     const order = await updateRentingOrderStatus(rent_id, delivery_status);
-    if (!order) return res.status(404).json({ message: "Order not found" });
 
     return res.status(200).json({ message: "Order status updated successfully", order });
   } catch (error) {

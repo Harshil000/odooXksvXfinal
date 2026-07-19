@@ -70,10 +70,13 @@ const Home = () => {
     const matchesSearch = product.pname.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
-    // 2. Publish status filter (Customers only see published ones)
+    // 2. Publish status — customers only see published products
     if (!isAdmin && product.to_publish === false) return false;
 
-    // 3. Dynamic attributes sidebar filter
+    // 3. Out-of-stock — hide completely from customers when no units are available
+    if (!isAdmin && product.outOfStock) return false;
+
+    // 4. Dynamic attributes sidebar filter
     for (const [attrName, selectedValue] of Object.entries(selectedFilters)) {
       if (selectedValue && selectedValue !== 'All') {
         const hasAttr = (attributes || []).some(attr =>
@@ -91,11 +94,11 @@ const Home = () => {
   return (
     <div className="home-container dashboard-page">
       {/* Integrated Navbar */}
-      <Navbar 
-        activeSection="products" 
-        searchQuery={searchQuery} 
-        onSearchChange={setSearchQuery} 
-        searchPlaceholder="Search products..." 
+      <Navbar
+        activeSection="products"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search products..."
       />
 
       <div className="main-content">
@@ -105,7 +108,7 @@ const Home = () => {
             {Object.keys(groupedFilters).map(attrName => (
               <div className="filter-group" key={attrName}>
                 <label>{attrName}</label>
-                <select 
+                <select
                   value={selectedFilters[attrName] || 'All'}
                   onChange={(e) => setSelectedFilters({
                     ...selectedFilters,
@@ -138,27 +141,27 @@ const Home = () => {
 
           <div className="products-grid">
             {filteredProducts.map((product) => (
-              <div 
-                key={product.id} 
-                className="product-card" 
+              <div
+                key={product.id}
+                className="product-card"
                 onClick={() => navigate(`/product/${product.id}`)}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="image-container">
                   {isAdmin && (
                     <div className="admin-card-actions">
-                      <button 
-                        className="admin-edit-btn" 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          navigate(`/edit-product/${product.id}`); 
+                      <button
+                        className="admin-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/edit-product/${product.id}`);
                         }}
                         title="Edit Product"
                       >
                         ✏️
                       </button>
-                      <button 
-                        className="admin-delete-btn" 
+                      <button
+                        className="admin-delete-btn"
                         onClick={(e) => handleDeleteProduct(e, product.id)}
                         title="Delete Product"
                       >
@@ -175,12 +178,13 @@ const Home = () => {
                     <div className="low-stock-badge">Low on stock</div>
                   )}
 
-                  {product.outOfStock ? (
+                  {/* Admin sees out-of-stock badge; customers are filtered out before reaching here */}
+                  {isAdmin && product.outOfStock ? (
                     <div className="out-of-stock-badge">Out of stock</div>
                   ) : (
                     <img src={product.image} alt="Product" />
                   )}
-                  
+
                   {product.colors && product.colors.length > 0 && (
                     <div className="variants">
                       {product.colors.map((color, idx) => (
@@ -191,7 +195,6 @@ const Home = () => {
                 </div>
                 <div className="product-info">
                   <div style={{fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)'}}>{product.pname}</div>
-                  <div className="price">{product.price} / per {product.duration}</div>
                 </div>
               </div>
             ))}

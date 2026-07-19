@@ -21,6 +21,7 @@ const Navbar = ({
   const displayName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Vendor"
     : "Vendor";
+  const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -104,7 +105,6 @@ const Navbar = ({
           className={`nav-link nav-link-container ${activeSection === "products" ? "active" : ""}`} 
           style={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: "4px", cursor: "pointer" }}
           onClick={() => {
-            const isVendor = !!(user?.role || user?.v_id || user?.c_id);
             if (isVendor) {
               navigate("/add-product");
             } else {
@@ -170,6 +170,16 @@ const Navbar = ({
           Reports
         </a>
       </div>
+
+      {!isVendor && user && (
+        <button
+          type="button"
+          className={`nav-history-btn ${activeSection === "history" ? "active" : ""}`}
+          onClick={() => navigate("/order-history")}
+        >
+          Order History
+        </button>
+      )}
 
       {/* Search */}
       <div className="nav-search">
@@ -280,7 +290,6 @@ const Navbar = ({
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: "4px", cursor: "pointer" }}
                   onClick={() => { 
                     setShowSidebar(false);
-                    const isVendor = !!(user?.role || user?.v_id || user?.c_id);
                     if (isVendor) {
                       navigate("/add-product");
                     } else {
@@ -318,6 +327,15 @@ const Navbar = ({
                   </div>
                 )}
               </div>
+              {!isVendor && (
+                <a
+                  href="#"
+                  className={`drawer-nav-link ${activeSection === "history" ? "active" : ""}`}
+                  onClick={(e) => { e.preventDefault(); setShowSidebar(false); navigate("/order-history"); }}
+                >
+                  Order History
+                </a>
+              )}
               <a 
                 href="#" 
                 className={`drawer-nav-link ${activeSection === "settings" ? "active" : ""}`}
