@@ -142,10 +142,10 @@ export async function saveCheckoutTransaction({
           email,
           item.startDate,
           item.endDate,
-          "pending", // delivery_status
+          "reserved", // delivery_status
           "nothing_to_invoice", // invoice_status
           unitRent, // total (rent charge only)
-          "pending", // payment_status
+          "captured", // payment_status
           unitDeposit, // deposit_amount
           0, // deposit_refunded_amount
         ]);

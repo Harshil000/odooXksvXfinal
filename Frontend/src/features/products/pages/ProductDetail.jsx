@@ -65,6 +65,7 @@ const ProductDetail = () => {
 
   const { user } = useContext(AuthContext);
   const isAdmin = user && (user.role === 'admin' || user.role === 'ADMIN');
+  const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
   // Date limit checks
   const minDateTime = useMemo(() => {
@@ -113,6 +114,34 @@ const ProductDetail = () => {
     return (
       <div className="product-detail-container loading">
         <p>Loading product details...</p>
+      </div>
+    );
+  }
+
+  // Access check: vendors/admins can only see/access products created by themselves
+  if (user && user.c_id && product.c_id !== user.c_id) {
+    return (
+      <div className="product-detail-container dashboard-page">
+        <Navbar activeSection="products" />
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-primary)" }}>
+          <h2>Access Denied</h2>
+          <p>You can only view and manage products created by your company.</p>
+          <button 
+            onClick={() => navigate("/")} 
+            style={{ 
+              marginTop: "20px", 
+              background: "var(--accent)", 
+              color: "#000", 
+              border: "none", 
+              padding: "10px 20px", 
+              borderRadius: "4px", 
+              cursor: "pointer", 
+              fontWeight: "bold" 
+            }}
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
@@ -297,62 +326,64 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <div className="action-box">
-              <div className="rental-period">
-                <label>Rental Period (IST)</label>
-                <div className="date-inputs">
-                  <input 
-                    type="datetime-local" 
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    min={minDateTime}
-                  />
-                  <span className="arrow">➔</span>
-                  <input 
-                    type="datetime-local" 
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate || minDateTime}
-                  />
+            {!isVendor && (
+              <div className="action-box">
+                <div className="rental-period">
+                  <label>Rental Period (IST)</label>
+                  <div className="date-inputs">
+                    <input 
+                      type="datetime-local" 
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      min={minDateTime}
+                    />
+                    <span className="arrow">➔</span>
+                    <input 
+                      type="datetime-local" 
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate || minDateTime}
+                    />
+                  </div>
+                </div>
+                <div className="bottom-actions">
+                  <div className="quantity-selector">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">-</button>
+                    <span>{quantity}</span>
+                    <button onClick={() => {
+                      const stock = Number(product?.quantity || 0);
+                      if (quantity >= stock) {
+                        alert(`Cannot add more. Only ${stock} items available in stock.`);
+                        return;
+                      }
+                      setQuantity(quantity + 1);
+                    }} type="button">+</button>
+                  </div>
+                  
+                  <button className="add-cart-btn" onClick={handleAddToCart} type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    Add to cart
+                  </button>
+                  
+                  <button className="icon-btn-bordered" onClick={handleWishlist} type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <div className="bottom-actions">
-                <div className="quantity-selector">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">-</button>
-                  <span>{quantity}</span>
-                  <button onClick={() => {
-                    const stock = Number(product?.quantity || 0);
-                    if (quantity >= stock) {
-                      alert(`Cannot add more. Only ${stock} items available in stock.`);
-                      return;
-                    }
-                    setQuantity(quantity + 1);
-                  }} type="button">+</button>
-                </div>
-                
-                <button className="add-cart-btn" onClick={handleAddToCart} type="button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                  Add to cart
-                </button>
-                
-                <button className="icon-btn-bordered" onClick={handleWishlist} type="button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
+            )}
+
             <div className="description-section">
               <h3>Description</h3>
               <p>{product.description || 'No description available for this product.'}</p>
             </div>
             
-            {rentPlans.length > 0 && (
+            {!isVendor && rentPlans.length > 0 && (
               <div className="rent-plans-section">
                 <h3>Rental Plans</h3>
                 <table className="rent-plans-table">
@@ -388,7 +419,7 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+      {!isVendor && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />}
     </div>
   );
 };

@@ -11,7 +11,7 @@ function mapOrderToRow(order) {
     orderRef: `SO${refNum}`,
     customer: order.customer_email?.split("@")[0] || "Unknown",
     customerEmail: order.customer_email,
-    status: order.delivery_status || "reserved",
+    status: (order.delivery_status === "pending" || !order.delivery_status) ? "reserved" : order.delivery_status,
     invoiceStatus: order.invoice_status || "nothing_to_invoice",
     pickupDate: order.start_date,
     returnDate: order.end_date,

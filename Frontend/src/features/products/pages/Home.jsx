@@ -116,6 +116,9 @@ const Home = () => {
   const baseProducts = searchResults !== null ? searchResults : (products || []);
 
   const filteredProducts = baseProducts.filter((product) => {
+    // 0. Owner filter (Vendors only see self-created products)
+    if (user && user.c_id && product.c_id !== user.c_id) return false;
+
     // When in search mode, backend already filtered by query — just apply UI filters
     if (searchResults === null) {
       // 2. Publish status filter (Customers only see published ones)

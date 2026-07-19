@@ -5,7 +5,11 @@
   background-color: var(--auth-bg);
   color: var(--text-primary);
   font-family: var(--sans);
-  padding: 2rem;
+  padding: 0;
+
+  .add-product-content {
+    padding: 2rem;
+  }
   
   .header-actions {
     display: flex;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { getCurrentUser } from '../../auth/services/auth.api';
 import { createCompanyAttribute } from '../../attributes/api/attribute.api';
+import Navbar from '../../dashboard/components/Navbar';
 import { loadCompanyAttributes, saveProductAttributes } from '../../attributes/services/attribute.service';
 import { saveProduct, loadProductDetails, editProduct } from '../services/product.service';
 import { loadProductRentPlans, saveRentPlans } from '../../rentPlans/services/rentPlan.service';
@@ -223,11 +224,13 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="add-product-container">
-      <div className="header-actions">
-        <button className="btn-cancel" onClick={() => navigate('/')}>Discard</button>
-        <button className="btn-save" onClick={handleSave}>Save</button>
-      </div>
+    <div className="add-product-container dashboard-page">
+      <Navbar activeSection="products" />
+      <div className="add-product-content">
+        <div className="header-actions">
+          <button className="btn-cancel" onClick={() => navigate('/')}>Discard</button>
+          <button className="btn-save" onClick={handleSave}>Save</button>
+        </div>
 
       <div className="form-card">
         <div className="top-section">
@@ -463,9 +466,11 @@ const AddProduct = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
 
 export default AddProduct;
+
 
