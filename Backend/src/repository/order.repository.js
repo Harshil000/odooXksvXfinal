@@ -30,20 +30,59 @@ export async function createRentingOrder(orderData) {
   } = orderData;
 
   const pool = getPool();
-  const result = await pool.query(INSERT_RENTING_ORDER_QUERY, [
-    r_id,
-    asset_id,
-    email,
-    start_date,
-    end_date,
-    delivery_status,
-    total,
-    invoice_status || "nothing_to_invoice",
-    u_id || null,
-    invoice_address_id || null,
-    delivery_address_id || null,
-  ]);
-  return result.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Get product p_id from asset_id
+    const assetRes = await client.query("SELECT p_id FROM assets WHERE asset_id = $1;", [asset_id]);
+    const asset = assetRes.rows[0];
+    if (!asset) {
+      throw new Error("Asset not found");
+    }
+
+    // Verify stock
+    const productRes = await client.query("SELECT quantity, pname FROM products WHERE p_id = $1 FOR UPDATE;", [asset.p_id]);
+    const product = productRes.rows[0];
+    if (!product) {
+      throw new Error("Product not found");
+    }
+    if (Number(product.quantity || 0) <= 0) {
+      throw new Error(`Insufficient stock for product "${product.pname}". Available: ${product.quantity}`);
+    }
+
+    // Insert Renting Order
+    const result = await client.query(INSERT_RENTING_ORDER_QUERY, [
+      r_id,
+      asset_id,
+      email,
+      start_date,
+      end_date,
+      delivery_status,
+      total,
+      invoice_status || "nothing_to_invoice",
+      u_id || null,
+      invoice_address_id || null,
+      delivery_address_id || null,
+    ]);
+    const order = result.rows[0];
+
+    // Decrement product quantity by 1
+    await client.query(
+      `UPDATE products 
+       SET quantity = GREATEST(0, quantity - 1) 
+       WHERE p_id = $1`,
+      [asset.p_id]
+    );
+
+    await client.query("COMMIT");
+    return order;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getAllRentingOrders() {
@@ -89,7 +128,7 @@ export async function updateRentingOrderStatus(rent_id, delivery_status) {
 
     let updatedOrder;
 
-    if (delivery_status === 'returned' && order.delivery_status !== 'returned') {
+    if (delivery_status === 'returned' && order.delivery_status !== 'returned' && order.delivery_status !== 'cancelled') {
       // 1. Calculate late penalty
       const now = new Date();
       let calculated_penalty = 0;
@@ -205,6 +244,16 @@ export async function updateRentingOrderStatus(rent_id, delivery_status) {
       // Standard status update
       const updateRes = await client.query(UPDATE_RENTING_ORDER_STATUS_QUERY, [delivery_status, rent_id]);
       updatedOrder = updateRes.rows[0];
+
+      // If transition to cancelled from an active state, restore quantity
+      if (delivery_status === 'cancelled' && order.delivery_status !== 'cancelled' && order.delivery_status !== 'returned') {
+        await client.query(
+          `UPDATE products
+           SET quantity = quantity + 1
+           WHERE p_id = $1`,
+          [order.p_id]
+        );
+      }
     }
 
     await client.query("COMMIT");
@@ -219,8 +268,44 @@ export async function updateRentingOrderStatus(rent_id, delivery_status) {
 
 export async function deleteRentingOrder(rent_id) {
   const pool = getPool();
-  const result = await pool.query(DELETE_RENTING_ORDER_QUERY, [rent_id]);
-  return result.rows[0] || null;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Get order details first
+    const orderDetailsRes = await client.query(
+      `SELECT ro.delivery_status, a.p_id
+       FROM renting_orders ro
+       JOIN assets a ON ro.asset_id = a.asset_id
+       WHERE ro.rent_id = $1`,
+      [rent_id]
+    );
+    const order = orderDetailsRes.rows[0];
+
+    // Delete the order
+    const result = await client.query(DELETE_RENTING_ORDER_QUERY, [rent_id]);
+    const deletedOrder = result.rows[0] || null;
+
+    if (order && deletedOrder) {
+      // If the deleted order was active (not returned or cancelled), restore quantity
+      if (order.delivery_status !== 'returned' && order.delivery_status !== 'cancelled') {
+        await client.query(
+          `UPDATE products
+           SET quantity = quantity + 1
+           WHERE p_id = $1`,
+          [order.p_id]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    return deletedOrder;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 // ==========================================

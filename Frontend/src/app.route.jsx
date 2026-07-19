@@ -86,11 +86,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/profile",
-    element: <ProtectedRoute allowedRoles="user"><Profile /></ProtectedRoute>
+    element: <ProtectedRoute><Profile /></ProtectedRoute>
   },
   {
     path: "/change-password",
-    element: <ProtectedRoute allowedRoles="user"><ChangePassword /></ProtectedRoute>
+    element: <ProtectedRoute><ChangePassword /></ProtectedRoute>
   },
   {
     path: "/order-history",

@@ -169,7 +169,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
             clearCart();
             setStep("cart");
             onClose();
-            navigate("/schedule"); // Redirect user to schedule view
+            navigate("/order-history"); // Redirect user to order history view
           } catch (err) {
             console.error(err);
             toast.error("Verification failed: " + (err.message || "Failed to verify payment signature"));

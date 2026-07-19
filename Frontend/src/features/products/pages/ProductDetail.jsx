@@ -87,6 +87,11 @@ const ProductDetail = () => {
       return alert("End date must be after Start date.");
     }
 
+    const stock = Number(product?.quantity || 0);
+    if (stock <= 0) {
+      return alert("This product is currently out of stock.");
+    }
+
     const success = await addToCart(p_id, selectedPlanId, quantity, startUTC.toISOString(), endUTC.toISOString());
     if (success) {
       setCartOpen(true);
@@ -296,6 +301,9 @@ const ProductDetail = () => {
             </div>
 
             <p className="price-label">{priceLabel}</p>
+            <p className="stock-label" style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "4px" }}>
+              In Stock: <strong style={{ color: product.quantity > 0 ? "#22c55e" : "#ef4444" }}>{product.quantity} units</strong>
+            </p>
 
             {/* Attributes Side/Variant Table with Dropdown Menus */}
             {Object.keys(groupedAttributes).length > 0 && (
@@ -348,8 +356,8 @@ const ProductDetail = () => {
                 </div>
                 <div className="bottom-actions">
                   <div className="quantity-selector">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">-</button>
-                    <span>{quantity}</span>
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button" disabled={product.quantity <= 0}>-</button>
+                    <span>{product.quantity <= 0 ? 0 : quantity}</span>
                     <button onClick={() => {
                       const stock = Number(product?.quantity || 0);
                       if (quantity >= stock) {
@@ -357,16 +365,22 @@ const ProductDetail = () => {
                         return;
                       }
                       setQuantity(quantity + 1);
-                    }} type="button">+</button>
+                    }} type="button" disabled={product.quantity <= 0}>+</button>
                   </div>
                   
-                  <button className="add-cart-btn" onClick={handleAddToCart} type="button">
+                  <button 
+                    className="add-cart-btn" 
+                    onClick={handleAddToCart} 
+                    type="button"
+                    disabled={product.quantity <= 0}
+                    style={product.quantity <= 0 ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                  >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="9" cy="21" r="1"></circle>
                       <circle cx="20" cy="21" r="1"></circle>
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                     </svg>
-                    Add to cart
+                    {product.quantity <= 0 ? "Out of Stock" : "Add to cart"}
                   </button>
                   
                   <button className="icon-btn-bordered" onClick={handleWishlist} type="button">
