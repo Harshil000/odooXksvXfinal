@@ -37,7 +37,14 @@ export async function getAllProducts(limit = null, offset = 0, onlyAvailable = f
   const pool = getPool();
   let query = `
     SELECT p.p_id, p.c_id, p.pname, p.description, p.to_publish, p.quantity, p.product_type, p.sales_price, p.cost_price,
-           (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image
+           (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image,
+           (SELECT COUNT(*)::int FROM assets a WHERE a.p_id = p.p_id) as asset_count,
+           (SELECT COUNT(*)::int 
+              FROM assets a 
+              JOIN renting_orders ro ON ro.asset_id = a.asset_id 
+             WHERE a.p_id = p.p_id 
+               AND ro.delivery_status NOT IN ('returned', 'cancelled')
+           ) as rented_count
     FROM products p
   `;
   

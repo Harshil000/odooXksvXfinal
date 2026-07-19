@@ -126,8 +126,16 @@ export async function searchProducts(query) {
     (async () => {
       try {
         const result = await pool.query(
-          `SELECT p_id, c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price
-           FROM products
+          `SELECT p.p_id, p.c_id, p.pname, p.description, p.to_publish, p.quantity, p.product_type, p.sales_price, p.cost_price,
+                  (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image,
+                  (SELECT COUNT(*)::int FROM assets a WHERE a.p_id = p.p_id) as asset_count,
+                  (SELECT COUNT(*)::int 
+                     FROM assets a 
+                     JOIN renting_orders ro ON ro.asset_id = a.asset_id 
+                    WHERE a.p_id = p.p_id 
+                      AND ro.delivery_status NOT IN ('returned', 'cancelled')
+                  ) as rented_count
+           FROM products p
            WHERE ${ilikeSQL}
            LIMIT 20`,
           ilikeParams
@@ -147,8 +155,16 @@ export async function searchProducts(query) {
     const placeholders = vectorIds.map((_, i) => `$${i + 1}`).join(", ");
     try {
       const result = await pool.query(
-        `SELECT p_id, c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price
-         FROM products WHERE p_id IN (${placeholders})`,
+        `SELECT p.p_id, p.c_id, p.pname, p.description, p.to_publish, p.quantity, p.product_type, p.sales_price, p.cost_price,
+                (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image,
+                (SELECT COUNT(*)::int FROM assets a WHERE a.p_id = p.p_id) as asset_count,
+                (SELECT COUNT(*)::int 
+                   FROM assets a 
+                   JOIN renting_orders ro ON ro.asset_id = a.asset_id 
+                  WHERE a.p_id = p.p_id 
+                    AND ro.delivery_status NOT IN ('returned', 'cancelled')
+                ) as rented_count
+         FROM products p WHERE p.p_id IN (${placeholders})`,
         vectorIds
       );
       // Preserve Qdrant's ranking order
