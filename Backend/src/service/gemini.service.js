@@ -59,3 +59,39 @@ export async function generateEmbedding(text) {
     return null;
   }
 }
+
+/**
+ * Expands a search query into synonyms and related terms for better keyword recall.
+ * e.g. "PC" → ["PC", "computer", "desktop", "personal computer", "workstation"]
+ *
+ * @param {string} query - Raw user search query
+ * @returns {Promise<string[]>} Array of expanded terms (including original). Falls back to [query] on error.
+ */
+export async function expandSearchQuery(query) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const prompt = `You are a search query expander for a product rental platform.
+Given the user's search term, return a comma-separated list of related product names, synonyms, abbreviations, and alternate terms someone might use to find this product.
+Include the original term. Return ONLY the comma-separated list — no explanation, no markdown, no extra text.
+
+Examples:
+- "PC" → "PC, computer, desktop, personal computer, workstation, laptop"
+- "cam" → "cam, camera, video camera, DSLR, camcorder"
+- "AC" → "AC, air conditioner, air conditioning unit, cooling machine"
+- "bike" → "bike, bicycle, cycle, two-wheeler"
+
+Now expand: "${query}"`;
+
+    const result = await model.generateContent(prompt);
+    const raw = result.response.text().trim();
+    const terms = raw
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0 && t.length < 80);
+    return terms.length > 0 ? terms : [query];
+  } catch (error) {
+    console.warn("[Gemini] Query expansion failed:", error.message);
+    return [query];
+  }
+}

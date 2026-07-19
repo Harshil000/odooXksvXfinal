@@ -1,4 +1,4 @@
-import { generateProductDescription, generateEmbedding } from "./gemini.service.js";
+import { generateProductDescription, generateEmbedding, expandSearchQuery } from "./gemini.service.js";
 import { upsertProductVector, searchSimilarProducts } from "./qdrant.service.js";
 import { getPool } from "../config/database.js";
 
@@ -81,20 +81,30 @@ export async function indexProduct(product, attributes = []) {
 }
 
 /**
- * Searches for products using a hybrid vector + keyword strategy.
+ * Searches for products using a hybrid vector + keyword strategy with query expansion.
  *
  * Pipeline:
- *   1. Run Gemini embedding on the query string (vector search)
- *   2. Run SQL ILIKE on pname/description (keyword search)
- *   3. Run both in parallel via Promise.all
- *   4. Fetch full product rows for vector hits
- *   5. Merge results: keyword matches first, then vector results, deduplicated by p_id
+ *   1. Expand query using Gemini (synonyms, abbreviations)
+ *   2. Run Gemini embedding on the original query string (vector search)
+ *   3. Run SQL ILIKE on pname/description using ALL expanded terms (keyword search)
+ *   4. Run vector search and keyword search in parallel
+ *   5. Fetch full product rows for vector hits
+ *   6. Merge results: keyword matches first, then vector results, deduplicated by p_id
  *
  * @param {string} query - Raw user search query string
  * @returns {Promise<object[]>} Merged, deduplicated product list (max ~30 results)
  */
 export async function searchProducts(query) {
   const pool = getPool();
+
+  // --- Expand query to capture synonyms and abbreviations ---
+  const expandedTerms = await expandSearchQuery(query);
+  console.log(`[Search] Query "${query}" expanded to: [${expandedTerms.join(", ")}]`);
+
+  // Build multi-term ILIKE condition: any term matching pname OR description
+  const ilikeClauses = expandedTerms.map((_, i) => `(pname ILIKE $${i + 1} OR description ILIKE $${i + 1})`);
+  const ilikeSQL = ilikeClauses.join(" OR ");
+  const ilikeParams = expandedTerms.map((t) => `%${t}%`);
 
   // --- Run vector search and keyword search in parallel ---
   const [vectorHits, keywordRows] = await Promise.all([
@@ -104,23 +114,23 @@ export async function searchProducts(query) {
         const queryVector = await generateEmbedding(query);
         if (!queryVector) return [];
         const hits = await searchSimilarProducts(queryVector, 20);
-        // Filter out irrelevant results with a similarity score below 0.58
-        return hits.filter(hit => hit.score >= 0.58);
+        // Filter out irrelevant results with a similarity score below 0.55
+        return hits.filter(hit => hit.score >= 0.55);
       } catch (err) {
         console.warn("[Search] Vector search failed:", err.message);
         return [];
       }
     })(),
 
-    // Keyword search via PostgreSQL ILIKE
+    // Keyword search via PostgreSQL ILIKE (with expanded terms)
     (async () => {
       try {
         const result = await pool.query(
           `SELECT p_id, c_id, pname, description, to_publish, quantity, product_type, sales_price, cost_price
            FROM products
-           WHERE pname ILIKE $1 OR description ILIKE $1
+           WHERE ${ilikeSQL}
            LIMIT 20`,
-          [`%${query}%`]
+          ilikeParams
         );
         return result.rows;
       } catch (err) {

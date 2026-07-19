@@ -6,6 +6,8 @@ import CartDrawer from '../../cart/components/CartDrawer';
 import Navbar from '../../dashboard/components/Navbar';
 import { AuthContext } from '../../auth/auth.context';
 import { removeProduct } from '../services/product.service';
+import httpClient from '../../../shared/api/httpClient';
+import { mapProductToCard } from '../utils/product.mapper';
 import '../styles/Home.scss';
 
 const Home = () => {
@@ -17,6 +19,8 @@ const Home = () => {
   // Debounced search query states
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null); // null = not in search mode
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -24,6 +28,32 @@ const Home = () => {
     }, 400);
     return () => clearTimeout(handler);
   }, [searchInput]);
+
+  // Call backend search API when debounced query changes
+  useEffect(() => {
+    if (!debouncedSearchQuery.trim()) {
+      setSearchResults(null); // clear search, show all products
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    httpClient
+      .get('/products/search', { params: { q: debouncedSearchQuery } })
+      .then((res) => {
+        if (!cancelled) {
+          const mapped = (res.data.products || []).map(mapProductToCard);
+          setSearchResults(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error('[Search] API error:', err);
+        if (!cancelled) setSearchResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [debouncedSearchQuery]);
 
   const [selectedFilters, setSelectedFilters] = useState({});
   const observerRef = useRef(null);
@@ -76,13 +106,15 @@ const Home = () => {
     }
   });
 
-  const filteredProducts = (products || []).filter((product) => {
-    // 1. Search filter
-    const matchesSearch = product.pname.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-    if (!matchesSearch) return false;
+  // When searching: use backend search results; otherwise filter the locally-loaded list
+  const baseProducts = searchResults !== null ? searchResults : (products || []);
 
-    // 2. Publish status filter (Customers only see published ones)
-    if (!isAdmin && product.to_publish === false) return false;
+  const filteredProducts = baseProducts.filter((product) => {
+    // When in search mode, backend already filtered by query — just apply UI filters
+    if (searchResults === null) {
+      // 2. Publish status filter (Customers only see published ones)
+      if (!isAdmin && product.to_publish === false) return false;
+    }
 
     // 3. Dynamic attributes sidebar filter
     for (const [attrName, selectedValue] of Object.entries(selectedFilters)) {
@@ -147,7 +179,11 @@ const Home = () => {
             )}
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {searchLoading ? (
+            <div className="no-products-found" style={{ padding: "40px 20px", textAlign: "center", color: "#a1a1aa", fontSize: "16px", background: "#1e1e1e", borderRadius: "8px", border: "1px solid #27272a", marginTop: "20px" }}>
+              Searching...
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="no-products-found" style={{ padding: "40px 20px", textAlign: "center", color: "#a1a1aa", fontSize: "16px", background: "#1e1e1e", borderRadius: "8px", border: "1px solid #27272a", marginTop: "20px" }}>
               No product found
             </div>
@@ -210,11 +246,13 @@ const Home = () => {
             </div>
           )}
 
-          {/* Scroll trigger / loading indicator */}
-          <div ref={observerRef} className="infinite-scroll-trigger">
-            {loading && <div className="loading-spinner">Loading more products...</div>}
-            {!hasMore && products.length > 0 && <div className="no-more-products">No more products to display.</div>}
-          </div>
+          {/* Scroll trigger / loading indicator (only show when not in search mode) */}
+          {searchResults === null && (
+            <div ref={observerRef} className="infinite-scroll-trigger">
+              {loading && <div className="loading-spinner">Loading more products...</div>}
+              {!hasMore && products.length > 0 && <div className="no-more-products">No more products to display.</div>}
+            </div>
+          )}
         </main>
       </div>
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
