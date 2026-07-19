@@ -10,6 +10,7 @@ export function mapProductToCard(product) {
     outOfStock: product.quantity <= 0,
     pname: product.pname,
     to_publish: product.to_publish,
+    c_id: product.c_id,
   };
 }
 

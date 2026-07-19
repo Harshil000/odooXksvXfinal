@@ -106,10 +106,11 @@ const Navbar = ({
             </a>
           </>
         )}
-        <div 
-          className={`nav-link nav-link-container ${activeSection === "products" ? "active" : ""}`} 
-          style={{ position: "relative", display: "inline-flex", alignItems: "center", paddingRight: "4px", cursor: "pointer" }}
-          onClick={() => {
+        <a
+          href="#"
+          className={`nav-link ${activeSection === "products" ? "active" : ""}`}
+          onClick={(e) => {
+            e.preventDefault();
             if (isVendor) {
               navigate("/add-product");
             } else {
@@ -117,42 +118,8 @@ const Navbar = ({
             }
           }}
         >
-          <a 
-            href="#" 
-            style={{ color: "inherit", textDecoration: "none", pointerEvents: "none" }}
-          >
-            Products
-          </a>
-          <button 
-            className="dropdown-arrow-btn" 
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowProductsDropdown(!showProductsDropdown); }}
-            style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", padding: "4px", marginLeft: "2px", display: "flex", alignItems: "center" }}
-            aria-label="Toggle Products Submenu"
-          >
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showProductsDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }}>
-              <polyline points="1 1 5 5 9 1" />
-            </svg>
-          </button>
-          
-          {showProductsDropdown && (
-            <div className="products-dropdown-menu" style={{ position: "absolute", top: "100%", left: 0, background: "#14141a", border: "1px solid #27272a", borderRadius: "6px", zIndex: 1000, minWidth: "120px", marginTop: "8px", boxShadow: "0 8px 30px rgba(0, 0, 0, 0.4)", overflow: "hidden" }}>
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation();
-                  setShowProductsDropdown(false); 
-                  setShowProductFilters(!showProductFilters); 
-                  navigate("/"); 
-                }}
-                style={{ width: "100%", textAlign: "left", background: "transparent", border: "none", color: "#ffffff", padding: "10px 16px", cursor: "pointer", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "background 0.2s" }}
-                onMouseEnter={(e) => e.target.style.background = "#1a1a22"}
-                onMouseLeave={(e) => e.target.style.background = "transparent"}
-              >
-                <span>Filters</span>
-                <span style={{ fontSize: "10px", color: showProductFilters ? "#22c55e" : "#52525b" }}>●</span>
-              </button>
-            </div>
-          )}
-        </div>
+          Products
+        </a>
         {isVendor && (
           <>
             <a
@@ -280,49 +247,21 @@ const Navbar = ({
                   </a>
                 </>
               )}
-              <div className="drawer-products-group" style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                <div 
-                  className={`drawer-nav-link ${activeSection === "products" ? "active" : ""}`}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: "4px", cursor: "pointer" }}
-                  onClick={() => { 
-                    setShowSidebar(false);
-                    if (isVendor) {
-                      navigate("/add-product");
-                    } else {
-                      navigate("/");
-                    }
-                  }}
-                >
-                  <span style={{ flex: 1 }}>Products</span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setShowDrawerProductsDropdown(!showDrawerProductsDropdown); }}
-                    style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", padding: "6px", display: "flex", alignItems: "center" }}
-                    aria-label="Toggle Drawer Products Submenu"
-                  >
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showDrawerProductsDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }}>
-                      <polyline points="1 1 5 5 9 1" />
-                    </svg>
-                  </button>
-                </div>
-                {showDrawerProductsDropdown && (
-                  <div style={{ paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "4px", margin: "4px 0" }}>
-                    <a
-                      href="#"
-                      className="drawer-nav-link"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowSidebar(false);
-                        setShowProductFilters(!showProductFilters);
-                        navigate("/");
-                      }}
-                      style={{ fontSize: "13px", color: showProductFilters ? "#fff" : "#a1a1aa", background: showProductFilters ? "rgba(163, 140, 245, 0.15)" : "transparent", display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                    >
-                      <span>Filters</span>
-                      <span style={{ fontSize: "10px", color: showProductFilters ? "#22c55e" : "#52525b" }}>●</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+              <a
+                href="#"
+                className={`drawer-nav-link ${activeSection === "products" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowSidebar(false);
+                  if (isVendor) {
+                    navigate("/add-product");
+                  } else {
+                    navigate("/");
+                  }
+                }}
+              >
+                Products
+              </a>
               {isVendor && (
                 <>
                   <a

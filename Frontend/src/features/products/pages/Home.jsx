@@ -66,6 +66,9 @@ const Home = () => {
   });
 
   const filteredProducts = (products || []).filter((product) => {
+    // 0. Owner filter (Vendors only see self-created products)
+    if (user && user.c_id && product.c_id !== user.c_id) return false;
+
     // 1. Search filter
     const matchesSearch = product.pname.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
