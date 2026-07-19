@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import Navbar from "../../dashboard/components/Navbar";
 import { useAssets } from "../hooks/useAssets";
+import { normalizeAssetCode } from "../utils/qr.util";
 import "../styles/Assets.scss";
 
 const Assets = () => {
@@ -19,7 +21,69 @@ const Assets = () => {
   const [selectedQRAsset, setSelectedQRAsset] = useState(null);
   const [scannedProductModalAsset, setScannedProductModalAsset] = useState(null);
   const [scannerError, setScannerError] = useState("");
-  const videoRef = useRef(null);
+  const [cameraAvailable, setCameraAvailable] = useState(true);
+  const scannerRef = useRef(null);
+
+  const getProductImageSrc = (product) => {
+    const image = product?.image || product?.image_base64 || product?.product_image;
+    if (!image) {
+      return `https://via.placeholder.com/420x420?text=${encodeURIComponent(product?.name || "Product")}`;
+    }
+
+    if (image.startsWith("data:") || image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+
+    return `data:image/jpeg;base64,${image}`;
+  };
+
+  const stopScanner = async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    if (!scanner) return;
+
+    try {
+      if (scanner.isScanning) {
+        await scanner.stop();
+      }
+      scanner.clear();
+    } catch (err) {
+      console.warn("Scanner cleanup failed:", err);
+    }
+  };
+
+  const findAssetFromScan = (decodedText) => {
+    const normalizedScan = normalizeAssetCode(decodedText);
+    if (!normalizedScan) return null;
+
+    for (const product of products) {
+      const asset = product.assets.find((item) => (
+        (item.normalizedCode || normalizeAssetCode(item.code)) === normalizedScan ||
+        normalizeAssetCode(item.id) === normalizedScan
+      ));
+
+      if (asset) {
+        return { product, asset };
+      }
+    }
+
+    return null;
+  };
+
+  const openMatchedAsset = async (decodedText) => {
+    const cleanedValue = decodedText.trim();
+    const found = findAssetFromScan(cleanedValue);
+    setScanQuery(cleanedValue);
+    setScannerError("");
+    await stopScanner();
+
+    if (found) {
+      setScannedProductModalAsset(found);
+      setScannerOpen(false);
+    } else {
+      setScannerError(`QR scanned: "${cleanedValue}", but no matching asset was found.`);
+    }
+  };
 
   useEffect(() => {
     if (matchedAsset) {
@@ -30,67 +94,99 @@ const Assets = () => {
   useEffect(() => {
     if (!scannerOpen) return undefined;
 
-    let stream;
-    let scanTimer;
-    let cancelled = false;
-
-    async function startCameraScanner() {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setScannerError("Camera access is not supported in this browser.");
-        return;
-      }
-
-      if (!("BarcodeDetector" in window)) {
-        setScannerError("Live QR scanning is not supported in this browser. Enter the asset code manually.");
-        return;
-      }
-
+    async function startScanner() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
+        setCameraAvailable(true);
+        await stopScanner();
 
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
+        if (!navigator.mediaDevices) {
+          setScannerError("Browser security blocking camera: Must use HTTPS or localhost.");
           return;
         }
 
-        const video = videoRef.current;
-        if (!video) return;
+        const element = document.getElementById("qr-reader");
+        if (!element) {
+          setScannerError("Scanner UI not loaded properly, please close and reopen.");
+          return;
+        }
 
-        video.srcObject = stream;
-        await video.play();
+        const cameras = await Html5Qrcode.getCameras();
+        if (!cameras || cameras.length === 0) {
+          setScannerError("No cameras found on your device.");
+          return;
+        }
 
-        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-        scanTimer = window.setInterval(async () => {
-          if (!video.videoWidth || !video.videoHeight) return;
+        const preferredCameras = [
+          ...cameras.filter(c => c.label.toLowerCase().includes("back") || c.label.toLowerCase().includes("environment")),
+          ...cameras.filter(c => !(c.label.toLowerCase().includes("back") || c.label.toLowerCase().includes("environment"))),
+        ];
 
+        let lastError = null;
+        for (const camera of preferredCameras) {
           try {
-            const codes = await detector.detect(video);
-            const rawValue = codes[0]?.rawValue;
-            if (rawValue) {
-              setScanQuery(rawValue);
-              setScannerError("");
-            }
-          } catch (err) {
-            console.error("Camera QR scan failed:", err);
+            await stopScanner();
+            const html5QrCode = new Html5Qrcode("qr-reader");
+            scannerRef.current = html5QrCode;
+            await html5QrCode.start(
+              camera.id,
+              {
+                fps: 8,
+                qrbox: { width: 240, height: 240 },
+                aspectRatio: 1,
+              },
+              (decodedText) => {
+                if (decodedText) {
+                  openMatchedAsset(decodedText);
+                }
+              },
+              () => {}
+            );
+            setScannerError("");
+            setCameraAvailable(true);
+            return;
+          } catch (cameraErr) {
+            lastError = cameraErr;
           }
-        }, 700);
+        }
+
+        throw lastError || new Error("Could not start any camera");
       } catch (err) {
         console.error("Camera access failed:", err);
-        setScannerError("Unable to open camera. Allow camera permission or enter the asset code manually.");
+        const errorName = err?.name || "";
+        const message = err?.message || errorName || String(err);
+        const help = errorName === "NotReadableError" || message.includes("NotReadableError")
+          ? "Close other apps/browser tabs using the camera, then click Retry Camera. You can also upload a QR image below."
+          : "Allow camera permission, then click Retry Camera. You can also upload a QR image below.";
+        setCameraAvailable(false);
+        setScannerError(`Camera error: ${message}. ${help}`);
       }
     }
 
-    startCameraScanner();
+    setTimeout(() => {
+      startScanner();
+    }, 100);
 
     return () => {
-      cancelled = true;
-      if (scanTimer) window.clearInterval(scanTimer);
-      if (stream) stream.getTracks().forEach((track) => track.stop());
+      stopScanner();
     };
   }, [scannerOpen, setScanQuery]);
+
+  const handleQrImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const scanner = new Html5Qrcode("qr-file-reader");
+      const decodedText = await scanner.scanFile(file, true);
+      scanner.clear();
+      await openMatchedAsset(decodedText);
+    } catch (err) {
+      console.error("QR image scan failed:", err);
+      setScannerError("Could not read a QR code from this image. Try a clearer photo or enter the asset code manually.");
+    } finally {
+      event.target.value = "";
+    }
+  };
 
   const handlePrintQR = (asset) => {
     const printWindow = window.open("", "_blank");
@@ -198,6 +294,7 @@ const Assets = () => {
             type="button"
             onClick={() => {
               setScannerError("");
+              setScanQuery("");
               setScannerOpen(true);
             }}
           >
@@ -289,18 +386,61 @@ const Assets = () => {
             </div>
 
             <div className="camera-scanner">
-              <video ref={videoRef} muted playsInline />
-              <div className="camera-frame" />
+              <div
+                id="qr-reader"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  overflow: "hidden",
+                  borderRadius: "12px",
+                  border: "none",
+                  display: cameraAvailable ? "block" : "none",
+                }}
+              />
+              {!cameraAvailable && (
+                <div className="camera-fallback-panel">
+                  <strong>Camera unavailable</strong>
+                  <span>Upload a QR image or enter the asset code manually.</span>
+                </div>
+              )}
             </div>
 
             {scannerError && <div className="scanner-error">{scannerError}</div>}
+
+            <div className="scanner-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerError("");
+                  stopScanner().then(() => {
+                    setScannerOpen(false);
+                    setTimeout(() => setScannerOpen(true), 50);
+                  });
+                }}
+              >
+                Retry Camera
+              </button>
+              <label className="scan-upload-btn">
+                Upload QR Image
+                <input type="file" accept="image/*" onChange={handleQrImageUpload} />
+              </label>
+              <div id="qr-file-reader" style={{ display: "none" }} />
+            </div>
 
             <label className="manual-scan-field">
               <span>Manual Asset Code</span>
               <input
                 type="text"
                 value={scanQuery}
-                onChange={(event) => setScanQuery(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const found = findAssetFromScan(value);
+                  setScanQuery(value);
+                  if (found) {
+                    setScannedProductModalAsset(found);
+                    setScannerOpen(false);
+                  }
+                }}
                 placeholder="Paste asset code or asset id"
               />
             </label>
@@ -342,16 +482,16 @@ const Assets = () => {
           <div className="product-scan-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="qr-modal-close" onClick={() => { setScannedProductModalAsset(null); setScanQuery(""); }} aria-label="Close modal">&times;</button>
             <div className="product-scan-details">
-              {scannedProductModalAsset.product.image ? (
-                <img className="product-scan-img" src={scannedProductModalAsset.product.image} alt={scannedProductModalAsset.product.name} />
-              ) : (
-                <div className="product-scan-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a22", color: "#71717a", fontSize: "12px" }}>No Image</div>
-              )}
+              <img
+                className="product-scan-img"
+                src={getProductImageSrc(scannedProductModalAsset.product)}
+                alt={scannedProductModalAsset.product.name}
+              />
               <div className="product-scan-info">
                 <h2>{scannedProductModalAsset.product.name}</h2>
                 <div className="scan-badge-row">
                   <span className="scan-badge type">{scannedProductModalAsset.product.productType || "Product"}</span>
-                  <span className="scan-badge price">₹{scannedProductModalAsset.product.price} / per {scannedProductModalAsset.product.duration || "month"}</span>
+                  <span className="scan-badge price">₹{scannedProductModalAsset.product.sales_price || scannedProductModalAsset.product.price || 0} / per {scannedProductModalAsset.product.duration || "month"}</span>
                 </div>
                 <p className="scan-desc">
                   {scannedProductModalAsset.product.description || scannedProductModalAsset.product.p_description || "No description provided."}
