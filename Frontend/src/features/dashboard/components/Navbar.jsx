@@ -25,8 +25,6 @@ const Navbar = ({
     : "Vendor";
   const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
-  const isVendor = !!(user?.role || user?.v_id || user?.c_id);
-
   // Cart item count — only for storefront (non-vendor) users
   const cartContext = useContext(CartContext);
   const cartItemCount = !isVendor && cartContext ? cartContext.cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;

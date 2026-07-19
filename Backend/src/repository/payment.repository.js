@@ -148,34 +148,13 @@ export async function saveCheckoutTransaction({
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
-<<<<<<< HEAD
             unitDeposit,
-=======
-            rentalTotalPerUnit,
-            "INR",
-            false, // is_deposit
-            "captured", // status
-            method || "card",
-          ]);
-        }
-
-        // 2.3 Insert Deposit Payment (Audit Trail)
-        if (depositAmountPerUnit > 0) {
-          await client.query(INSERT_PAYMENT_QUERY, [
-            order.rent_id,
-            u_id,
-            razorpay_order_id,
-            razorpay_payment_id,
-            razorpay_signature,
-            depositAmountPerUnit,
->>>>>>> f415afe1c8abe37e75474d980140b43123e4ebff
             "INR",
             true, // is_deposit
             "captured", // status
             method || "card",
           ]);
         }
-<<<<<<< HEAD
 
         // 2.3 Decrement available product quantity by 1
         await client.query(
@@ -184,8 +163,6 @@ export async function saveCheckoutTransaction({
            WHERE p_id = $1`,
           [item.p_id]
         );
-=======
->>>>>>> f415afe1c8abe37e75474d980140b43123e4ebff
       }
     }
 
