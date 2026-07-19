@@ -21,6 +21,7 @@ SELECT
   p.pname AS product_name,
   p.sales_price,
   p.cost_price,
+  p.quantity AS product_quantity,
   rp.price AS plan_price,
   rp.duration_type,
   rp.deposit,

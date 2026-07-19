@@ -49,6 +49,7 @@ export function mapCartItem(item) {
     deposit,
     durationType: item.duration_type,
     quantity,
+    productQuantity: Number(item.product_quantity) || 0,
     startDate: item.start_date,
     endDate: item.end_date,
     image: item.image,

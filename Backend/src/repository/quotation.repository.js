@@ -117,9 +117,6 @@ export async function convertQuotationToOrder(q_id, addressData = {}) {
         continue; // skip already converted items
       }
 
-      // Locate or create a free asset
-      const assetId = await findOrCreateFreeAsset(quote.p_id, quote.start_date, quote.end_date, client);
-
       // Resolve user account
       const userRes = await client.query(SELECT_USER_BY_EMAIL_QUERY, [quote.customer_email.trim()]);
       let resolvedUserId;
@@ -180,31 +177,57 @@ export async function convertQuotationToOrder(q_id, addressData = {}) {
       const planRes = await client.query(SELECT_RENT_PLAN_DEPOSIT_QUERY, [quote.r_id]);
       const depositAmount = planRes.rows[0] ? Number(planRes.rows[0].deposit || 0) : 0;
 
-      // Insert Renting Order
-      const orderRes = await client.query(INSERT_RENTING_ORDER_QUERY, [
-        quote.r_id,
-        assetId,
-        resolvedUserId,
-        resolvedInvoiceAddressId,
-        resolvedDeliveryAddressId,
-        quote.customer_email,
-        quote.start_date,
-        quote.end_date,
-        "reserved",
-        "confirmed",
-        quote.total,
-        "pending",
-        depositAmount
-      ]);
-      const createdOrder = orderRes.rows[0];
+      const quoteQty = Number(quote.quantity || 1);
+      const unitTotal = Number(quote.total || 0) / quoteQty;
 
-      // Update Quotation Status to 'converted'
-      await client.query(UPDATE_QUOTATION_CONVERTED_QUERY, [
-        createdOrder.rent_id,
-        quote.q_id
-      ]);
+      // Verify stock availability with lock
+      const productRes = await client.query("SELECT quantity, pname FROM products WHERE p_id = $1 FOR UPDATE;", [quote.p_id]);
+      const product = productRes.rows[0];
+      if (!product) {
+        throw new Error("Product not found");
+      }
+      if (Number(product.quantity || 0) < quoteQty) {
+        throw new Error(`Insufficient stock for product "${product.pname}". Available: ${product.quantity}, requested: ${quoteQty}`);
+      }
 
-      createdOrders.push(createdOrder);
+      for (let q = 0; q < quoteQty; q++) {
+        // Locate or create a free asset
+        const assetId = await findOrCreateFreeAsset(quote.p_id, quote.start_date, quote.end_date, client);
+
+        // Insert Renting Order
+        const orderRes = await client.query(INSERT_RENTING_ORDER_QUERY, [
+          quote.r_id,
+          assetId,
+          resolvedUserId,
+          resolvedInvoiceAddressId,
+          resolvedDeliveryAddressId,
+          quote.customer_email,
+          quote.start_date,
+          quote.end_date,
+          "reserved",
+          "confirmed",
+          unitTotal, // total (rent charge only per unit)
+          "pending",
+          depositAmount
+        ]);
+        const createdOrder = orderRes.rows[0];
+
+        // Update Quotation Status to 'converted'
+        await client.query(UPDATE_QUOTATION_CONVERTED_QUERY, [
+          createdOrder.rent_id,
+          quote.q_id
+        ]);
+
+        createdOrders.push(createdOrder);
+
+        // Decrement available product quantity by 1
+        await client.query(
+          `UPDATE products 
+           SET quantity = GREATEST(0, quantity - 1) 
+           WHERE p_id = $1`,
+          [quote.p_id]
+        );
+      }
     }
 
     await client.query("COMMIT");

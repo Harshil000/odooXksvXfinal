@@ -12,6 +12,7 @@ import {
   DELETE_STOPS_FOR_ROUTE_QUERY,
   UPDATE_ROUTE_TOTALS_QUERY,
 } from "../queries/deliveryRoute.query.js";
+import { updateRentingOrderStatus } from "./order.repository.js";
 
 export async function getStoreLocation() {
   const pool = getPool();
@@ -109,10 +110,7 @@ export async function updateStopStatus(stop_id, status, actualTime) {
     orderStatus = stop.stop_type === "delivery" ? "failed_delivery" : "late_pickup";
   }
 
-  await pool.query(
-    "UPDATE renting_orders SET delivery_status = $1 WHERE rent_id = $2",
-    [orderStatus, stop.order_id]
-  );
+  await updateRentingOrderStatus(stop.order_id, orderStatus);
 
   return result.rows[0] || null;
 }

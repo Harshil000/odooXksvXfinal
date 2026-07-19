@@ -33,16 +33,25 @@ export async function createProduct(c_id, productData) {
   return result.rows[0];
 }
 
-export async function getAllProducts(limit = null, offset = 0) {
+export async function getAllProducts(limit = null, offset = 0, onlyAvailable = false) {
   const pool = getPool();
-  let query = SELECT_ALL_PRODUCTS_QUERY.trim();
-  if (query.endsWith(";")) {
-    query = query.slice(0, -1);
+  let query = `
+    SELECT p.p_id, p.c_id, p.pname, p.description, p.to_publish, p.quantity, p.product_type, p.sales_price, p.cost_price,
+           (SELECT image_base64 FROM product_images i WHERE i.p_id = p.p_id LIMIT 1) as image
+    FROM products p
+  `;
+  
+  if (onlyAvailable) {
+    query += ` WHERE p.quantity > 0`;
   }
   
   const params = [];
   if (limit !== null) {
-    query += ` LIMIT $1 OFFSET $2`;
+    if (onlyAvailable) {
+      query += ` LIMIT $1 OFFSET $2`;
+    } else {
+      query += ` LIMIT $1 OFFSET $2`;
+    }
     params.push(limit, offset);
   }
   query += ";";

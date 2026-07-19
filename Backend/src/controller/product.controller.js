@@ -56,7 +56,8 @@ export async function getAllProductsController(req, res, next) {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    const products = await getAllProducts(limit, offset);
+    const isVendor = req.user && (req.user.role === 'admin' || req.user.role === 'vendor' || req.user.v_id || req.user.c_id);
+    const products = await getAllProducts(limit, offset, !isVendor);
     const productIds = products.map(p => p.p_id);
     const attributes = await getProductsAttributes(productIds);
     return res.status(200).json({ products, attributes });
@@ -146,7 +147,12 @@ export async function searchProductsController(req, res, next) {
     }
 
     const results = await searchProducts(q.trim());
-    return res.status(200).json({ query: q, count: results.length, products: results });
+    const isVendor = req.user && (req.user.role === 'admin' || req.user.role === 'vendor' || req.user.v_id || req.user.c_id);
+    let finalResults = results;
+    if (!isVendor) {
+      finalResults = results.filter(p => Number(p.quantity || 0) > 0);
+    }
+    return res.status(200).json({ query: q, count: finalResults.length, products: finalResults });
   } catch (error) {
     next(error);
   }

@@ -300,12 +300,18 @@ const ProductDetail = () => {
                   />
                 </div>
               </div>
-
               <div className="bottom-actions">
                 <div className="quantity-selector">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">-</button>
                   <span>{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} type="button">+</button>
+                  <button onClick={() => {
+                    const stock = Number(product?.quantity || 0);
+                    if (quantity >= stock) {
+                      alert(`Cannot add more. Only ${stock} items available in stock.`);
+                      return;
+                    }
+                    setQuantity(quantity + 1);
+                  }} type="button">+</button>
                 </div>
                 
                 <button className="add-cart-btn" onClick={handleAddToCart} type="button">

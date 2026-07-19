@@ -115,63 +115,67 @@ export async function saveCheckoutTransaction({
 
     // 2. Loop and create renting orders & payments
     for (const item of cartItems) {
-      const asset_id = await findOrCreateFreeAsset(item.p_id, item.startDate, item.endDate, client);
+      const itemQty = Number(item.quantity || 1);
+      const unitDeposit = Number(item.deposit || 0);
+      const unitRent = Math.max(0, (Number(item.subtotal || 0) / itemQty) - unitDeposit);
 
-      const rentalTotal = Number(item.subtotal || 0);
-      const depositAmount = Number(item.deposit || 0);
-      const totalAmount = rentalTotal + depositAmount;
-
-      // 2.1 Insert Renting Order
-      const orderRes = await client.query(INSERT_ORDER_WITH_PAYMENT_QUERY, [
-        item.r_id,
-        asset_id,
-        u_id,
-        addressId, // invoice_address_id
-        addressId, // delivery_address_id
-        email,
-        item.startDate,
-        item.endDate,
-        "pending", // delivery_status
-        "nothing_to_invoice", // invoice_status
-        rentalTotal, // total (rent charge only)
-        "paid", // payment_status
-        depositAmount, // deposit_amount
-        0, // deposit_refunded_amount
-      ]);
-
-      const order = orderRes.rows[0];
-      createdOrders.push(order);
-
-      // 2.2 Insert Rent Payment (Audit Trail)
-      if (rentalTotal > 0) {
-        await client.query(INSERT_PAYMENT_QUERY, [
-          order.rent_id,
-          u_id,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          rentalTotal,
-          "INR",
-          false, // is_deposit
-          "captured", // status
-          method || "card",
-        ]);
+      // Verify stock availability with lock
+      const productRes = await client.query("SELECT quantity, pname FROM products WHERE p_id = $1 FOR UPDATE;", [item.p_id]);
+      const product = productRes.rows[0];
+      if (!product) {
+        throw new Error("Product not found");
+      }
+      if (Number(product.quantity || 0) < itemQty) {
+        throw new Error(`Insufficient stock for product "${product.pname}". Available: ${product.quantity}, requested: ${itemQty}`);
       }
 
-      // 2.3 Insert Deposit Payment (Audit Trail)
-      if (depositAmount > 0) {
-        await client.query(INSERT_PAYMENT_QUERY, [
-          order.rent_id,
+      for (let q = 0; q < itemQty; q++) {
+        const asset_id = await findOrCreateFreeAsset(item.p_id, item.startDate, item.endDate, client);
+
+        // 2.1 Insert Renting Order
+        const orderRes = await client.query(INSERT_ORDER_WITH_PAYMENT_QUERY, [
+          item.r_id,
+          asset_id,
           u_id,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          depositAmount,
-          "INR",
-          true, // is_deposit
-          "captured", // status
-          method || "card",
+          addressId, // invoice_address_id
+          addressId, // delivery_address_id
+          email,
+          item.startDate,
+          item.endDate,
+          "pending", // delivery_status
+          "nothing_to_invoice", // invoice_status
+          unitRent, // total (rent charge only)
+          "pending", // payment_status
+          unitDeposit, // deposit_amount
+          0, // deposit_refunded_amount
         ]);
+
+        const order = orderRes.rows[0];
+        createdOrders.push(order);
+
+        // 2.2 Insert Deposit Payment (Audit Trail)
+        if (unitDeposit > 0) {
+          await client.query(INSERT_PAYMENT_QUERY, [
+            order.rent_id,
+            u_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            unitDeposit,
+            "INR",
+            true, // is_deposit
+            "captured", // status
+            method || "card",
+          ]);
+        }
+
+        // 2.3 Decrement available product quantity by 1
+        await client.query(
+          `UPDATE products 
+           SET quantity = GREATEST(0, quantity - 1) 
+           WHERE p_id = $1`,
+          [item.p_id]
+        );
       }
     }
 

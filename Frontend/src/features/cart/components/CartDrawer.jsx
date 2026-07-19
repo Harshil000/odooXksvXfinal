@@ -4,6 +4,8 @@ import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, CreditCard } from "luci
 import { useCart } from "../hooks/useCart";
 import { createRazorpayOrder, verifyPaymentSignature } from "../../payment/api/payment.api";
 import { getProfile } from "../../profile/services/profile.api";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../styles/CartDrawer.scss";
 
 function formatDate(dateStr) {
@@ -116,7 +118,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
     }
 
     if (!email.trim()) {
-      alert("Please enter a valid email address.");
+      toast.error("Please enter a valid email address.");
       return;
     }
 
@@ -125,12 +127,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
-        alert("Failed to load Razorpay SDK. Please check your internet connection.");
+        toast.error("Failed to load Razorpay SDK. Please check your internet connection.");
         return;
       }
 
-      // 1. Create order on backend
-      const orderData = await createRazorpayOrder(totals.grandTotal);
+      // 1. Create order on backend (paying deposit total only)
+      const orderData = await createRazorpayOrder(totals.depositTotal);
       const { key_id, order } = orderData;
 
       // 2. Configure Razorpay options
@@ -139,7 +141,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
         amount: order.amount,
         currency: order.currency,
         name: "Zenith Rental",
-        description: `Rental payment for ${cartItems.length} items`,
+        description: `Deposit payment for ${cartItems.length} items`,
         order_id: order.id,
         handler: async function (response) {
           try {
@@ -163,14 +165,14 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
             await verifyPaymentSignature(verifyPayload);
 
-            alert("Payment Verified! Your rental booking is confirmed.");
+            toast.success("Payment Verified! Your rental booking is confirmed.");
             clearCart();
             setStep("cart");
             onClose();
             navigate("/schedule"); // Redirect user to schedule view
           } catch (err) {
             console.error(err);
-            alert("Verification failed: " + (err.message || "Failed to verify payment signature"));
+            toast.error("Verification failed: " + (err.message || "Failed to verify payment signature"));
           } finally {
             setIsProcessing(false);
           }
@@ -182,16 +184,22 @@ const CartDrawer = ({ isOpen, onClose }) => {
         theme: {
           color: "#22c55e",
         },
+        modal: {
+          ondismiss: function() {
+            toast.warn("Payment checkout cancelled by user.");
+            setIsProcessing(false);
+          }
+        }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
-        alert("Payment failed: " + response.error.description);
+        toast.error("Payment failed: " + response.error.description);
       });
       rzp.open();
     } catch (error) {
       console.error(error);
-      alert("Error initiating checkout: " + error.message);
+      toast.error("Error initiating checkout: " + error.message);
     } finally {
       setIsProcessing(false);
     }
@@ -277,7 +285,13 @@ const CartDrawer = ({ isOpen, onClose }) => {
                             <Minus size={12} />
                           </button>
                           <span>{item.quantity}</span>
-                          <button onClick={() => updateQty(item.id, item.quantity + 1)}>
+                           <button onClick={() => {
+                            if (item.quantity >= item.productQuantity) {
+                              toast.warn(`Cannot add more. Only ${item.productQuantity} items in stock.`);
+                              return;
+                            }
+                            updateQty(item.id, item.quantity + 1);
+                          }}>
                             <Plus size={12} />
                           </button>
                         </div>
@@ -417,13 +431,14 @@ const CartDrawer = ({ isOpen, onClose }) => {
               ) : (
                 <button className="btn-checkout" onClick={handlePayment} style={{ width: "100%", flex: "none" }} disabled={isProcessing}>
                   <CreditCard size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
-                  {isProcessing ? "Processing Payment..." : `Pay ${formatCurrency(totals.grandTotal)}`}
+                  {isProcessing ? "Processing Payment..." : `Pay Deposit: ${formatCurrency(totals.depositTotal)}`}
                 </button>
               )}
             </div>
           </div>
         )}
       </div>
+      <ToastContainer position="top-right" autoClose={3000} theme="dark" />
     </div>
   );
 };
