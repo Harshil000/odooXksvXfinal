@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../../cart/hooks/useCart';
 import CartDrawer from '../../cart/components/CartDrawer';
@@ -12,15 +12,21 @@ import '../styles/Home.scss';
 
 const Home = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { products, attributes, loading, error, hasMore, loadMore } = useProducts();
   const { totals } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   
   // Debounced search query states
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null); // null = not in search mode
   const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get('search') || '';
+    setSearchInput(q);
+  }, [searchParams]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -138,7 +144,8 @@ const Home = () => {
         activeSection="products" 
         searchQuery={searchInput} 
         onSearchChange={setSearchInput} 
-        searchPlaceholder="Search products..." 
+        searchPlaceholder="Search products..."
+        onCartOpen={() => setCartOpen(true)}
       />
 
       <div className="main-content">

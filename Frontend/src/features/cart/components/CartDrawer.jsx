@@ -173,6 +173,9 @@ const CartDrawer = ({ isOpen, onClose }) => {
           } catch (err) {
             console.error(err);
             toast.error("Verification failed: " + (err.message || "Failed to verify payment signature"));
+            clearCart();
+            setStep("cart");
+            onClose();
           } finally {
             setIsProcessing(false);
           }
@@ -186,7 +189,10 @@ const CartDrawer = ({ isOpen, onClose }) => {
         },
         modal: {
           ondismiss: function() {
-            toast.warn("Payment checkout cancelled by user.");
+            toast.warn("Payment checkout cancelled.");
+            clearCart();
+            setStep("cart");
+            onClose();
             setIsProcessing(false);
           }
         }
@@ -195,6 +201,9 @@ const CartDrawer = ({ isOpen, onClose }) => {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
         toast.error("Payment failed: " + response.error.description);
+        clearCart();
+        setStep("cart");
+        onClose();
       });
       rzp.open();
     } catch (error) {

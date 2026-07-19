@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from 'react';
+import { useState, useContext, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useProductDetails } from '../hooks/useProductDetails';
 import { useCart } from '../../cart/hooks/useCart';
@@ -44,8 +44,16 @@ const ProductDetail = () => {
     setSelectedPlanId 
   } = useProductDetails(p_id);
   
-  const { addToCart, totals } = useCart();
+  const { addToCart, totals, clearCart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+
+  // Clear cart when user leaves this product page
+  useEffect(() => {
+    return () => {
+      clearCart();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Image Swiper State
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -174,7 +182,15 @@ const ProductDetail = () => {
   return (
     <div className="product-detail-container dashboard-page">
       {/* Unified Navbar */}
-      <Navbar activeSection="products" />
+      <Navbar 
+        activeSection="products" 
+        onCartOpen={() => setCartOpen(true)}
+        searchQuery=""
+        onSearchChange={(query) => {
+          navigate(`/?search=${encodeURIComponent(query)}`);
+        }}
+        searchPlaceholder="Search products..."
+      />
 
       {/* Main Detail Area */}
       <main className="product-detail-main">

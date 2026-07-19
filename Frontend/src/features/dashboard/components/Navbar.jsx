@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router";
 import { AuthContext } from "../../auth/auth.context";
 import { logout } from "../../auth/services/auth.api";
+import { CartContext } from "../../cart/context/cart.context";
 
 const Navbar = ({
   activeSection = "orders",
   searchQuery,
   onSearchChange,
   searchPlaceholder = "Search orders...",
+  onCartOpen,
 }) => {
   const navigate = useNavigate();
   const { user, setUser, companyInfo = { cname: "Your Logo", comp_prof_image: null }, showProductFilters, setShowProductFilters } = useContext(AuthContext);
@@ -23,6 +25,10 @@ const Navbar = ({
     : "Vendor";
 
   const isVendor = !!(user?.role || user?.v_id || user?.c_id);
+
+  // Cart item count — only for storefront (non-vendor) users
+  const cartContext = useContext(CartContext);
+  const cartItemCount = !isVendor && cartContext ? cartContext.cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -187,6 +193,58 @@ const Navbar = ({
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
       </div>
+
+      {/* Cart button — only for regular (non-vendor) users */}
+      {!isVendor && onCartOpen && (
+        <button
+          className="nav-cart-btn"
+          onClick={onCartOpen}
+          aria-label="Open Cart"
+          id="navbar-cart-btn"
+          style={{
+            position: "relative",
+            background: "transparent",
+            border: "1px solid #3f3f46",
+            borderRadius: "8px",
+            padding: "6px 10px",
+            cursor: "pointer",
+            color: "#a1a1aa",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "border-color 0.2s, color 0.2s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8b5cf6"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#3f3f46"; e.currentTarget.style.color = "#a1a1aa"; }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+          {cartItemCount > 0 && (
+            <span style={{
+              position: "absolute",
+              top: "-6px",
+              right: "-6px",
+              background: "#8b5cf6",
+              color: "#fff",
+              borderRadius: "50%",
+              width: "18px",
+              height: "18px",
+              fontSize: "11px",
+              fontWeight: "700",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+            }}>
+              {cartItemCount > 99 ? "99+" : cartItemCount}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Profile */}
       <div className="nav-profile" ref={profileRef}>
