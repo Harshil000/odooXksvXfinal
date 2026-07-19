@@ -16,7 +16,7 @@ try {
     // Initialize Qdrant collection after server starts (non-blocking)
     initQdrantCollection();
     // Initialize return checks background cron job
-    // initCron();
+    initCron();
   });
 } catch (err) {
   console.error(`Due to error: ${err.message}`);

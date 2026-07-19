@@ -39,6 +39,7 @@ const Schedule = () => {
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [routingLoaded, setRoutingLoaded] = useState(false);
 
   const handleNewOrder = () => {
     const params = new URLSearchParams({
@@ -137,9 +138,43 @@ const Schedule = () => {
     loadLeaflet();
   }, [showRoutePanel, routeData, apiKey]);
 
+  // Dynamic Leaflet Routing Machine Loader
+  useEffect(() => {
+    if (!leafletLoaded) return;
+
+    if (window.L && window.L.Routing) {
+      setRoutingLoaded(true);
+      return;
+    }
+
+    if (!document.getElementById("leaflet-routing-css")) {
+      const link = document.createElement("link");
+      link.id = "leaflet-routing-css";
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css";
+      document.head.appendChild(link);
+    }
+
+    if (!document.getElementById("leaflet-routing-js")) {
+      const script = document.createElement("script");
+      script.id = "leaflet-routing-js";
+      script.src = "https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js";
+      script.async = true;
+      script.onload = () => setRoutingLoaded(true);
+      document.body.appendChild(script);
+    } else {
+      const interval = setInterval(() => {
+        if (window.L && window.L.Routing) {
+          clearInterval(interval);
+          setRoutingLoaded(true);
+        }
+      }, 100);
+    }
+  }, [leafletLoaded]);
+
   // Leaflet Map Initializer
   useEffect(() => {
-    if (apiKey || !leafletLoaded || !routeData || !routeData.store) return;
+    if (apiKey || !leafletLoaded || !routingLoaded || !routeData || !routeData.store) return;
 
     const store = routeData.store;
     const stops = routeData.stops;
@@ -199,18 +234,32 @@ const Schedule = () => {
 
     latlngs.push([store.lat, store.lng]);
 
-    if (latlngs.length > 2) {
-      L.polyline(latlngs, {
-        color: "#c084fc",
-        weight: 5,
-        opacity: 0.8,
-        dashArray: "5, 10"
-      }).addTo(map);
+    if (latlngs.length > 1) {
+      if (window.L.Routing) {
+        window.L.Routing.control({
+          waypoints: latlngs.map(ll => window.L.latLng(ll[0], ll[1])),
+          routeWhileDragging: false,
+          addWaypoints: false,
+          createMarker: function() { return null; },
+          lineOptions: {
+            styles: [{ color: "#c084fc", weight: 6, opacity: 0.8 }]
+          },
+          show: false,
+          fitSelectedRoutes: false
+        }).addTo(map);
+      } else {
+        window.L.polyline(latlngs, {
+          color: "#c084fc",
+          weight: 5,
+          opacity: 0.8,
+          dashArray: "5, 10"
+        }).addTo(map);
+      }
 
-      const bounds = L.latLngBounds(latlngs);
+      const bounds = window.L.latLngBounds(latlngs);
       map.fitBounds(bounds, { padding: [30, 30] });
     }
-  }, [leafletLoaded, routeData, apiKey]);
+  }, [leafletLoaded, routingLoaded, routeData, apiKey]);
 
   return (
     <div className="schedule-page">
