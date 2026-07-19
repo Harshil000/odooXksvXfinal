@@ -134,6 +134,7 @@ WHERE a.p_id = $1
     WHERE ro.delivery_status NOT IN ('returned', 'cancelled')
       AND NOT (ro.end_date <= $2 OR ro.start_date >= $3)
   )
+ORDER BY a.asset_id
 LIMIT 1;
 `;
 

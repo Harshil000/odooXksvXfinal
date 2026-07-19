@@ -1,6 +1,6 @@
 import { createAssetForProduct, getAssetProducts, getAssetsForProduct } from "../api/assets.api";
 import { mapProductWithAssets } from "../utils/asset.mapper";
-import { buildAssetCode, createAssetQrBase64 } from "../utils/qr.util";
+import { buildAssetCode } from "../utils/qr.util";
 
 export async function loadAssetInventory() {
   const productsResponse = await getAssetProducts();
@@ -24,7 +24,7 @@ export async function createAssetsForProduct(product, requestedCount) {
   for (let index = 0; index < createCount; index += 1) {
     const sequence = product.assets.length + index + 1;
     const assetCode = buildAssetCode({ p_id: product.id, pname: product.name }, sequence);
-    const qr = createAssetQrBase64(assetCode);
+    const qr = assetCode;   // Store only the short code — QR image generated dynamically on frontend
     const response = await createAssetForProduct(product.id, qr);
     createdAssets.push(response.asset);
   }

@@ -44,6 +44,37 @@ WHERE rent_id = $1
 RETURNING rent_id;
 `;
 
+export const SELECT_RENTING_ORDER_HISTORY_BY_USER_QUERY = `
+WITH current_customer AS (
+  SELECT u_id, email
+  FROM users
+  WHERE u_id = $1
+)
+SELECT
+  ro.rent_id,
+  ro.r_id,
+  ro.asset_id,
+  ro.email,
+  ro.start_date,
+  ro.end_date,
+  ro.delivery_status,
+  ro.invoice_status,
+  ro.total,
+  ro.created_at,
+  rp.price AS plan_price,
+  rp.deposit,
+  rp.duration_type,
+  p.p_id,
+  p.pname AS product_name,
+  a.qr AS asset_qr
+FROM renting_orders ro
+JOIN current_customer cu ON ro.u_id = cu.u_id OR LOWER(ro.email) = LOWER(cu.email)
+JOIN rent_plans rp ON ro.r_id = rp.r_id
+JOIN products p ON rp.p_id = p.p_id
+LEFT JOIN assets a ON a.asset_id = ro.asset_id
+ORDER BY ro.created_at DESC;
+`;
+
 // ==========================================
 // ENRICHED DASHBOARD QUERY
 // JOINs orders with rent_plans and products

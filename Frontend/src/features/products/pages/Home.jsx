@@ -122,7 +122,10 @@ const Home = () => {
       if (!isAdmin && product.to_publish === false) return false;
     }
 
-    // 3. Dynamic attributes sidebar filter
+    // 3. Out-of-stock — hide completely from customers when no units are available
+    if (!isAdmin && product.outOfStock) return false;
+
+    // 4. Dynamic attributes sidebar filter
     for (const [attrName, selectedValue] of Object.entries(selectedFilters)) {
       if (selectedValue && selectedValue !== 'All') {
         const hasAttr = (attributes || []).some(attr =>
@@ -155,7 +158,7 @@ const Home = () => {
             {Object.keys(groupedFilters).map(attrName => (
               <div className="filter-group" key={attrName}>
                 <label>{attrName}</label>
-                <select 
+                <select
                   value={selectedFilters[attrName] || 'All'}
                   onChange={(e) => setSelectedFilters({
                     ...selectedFilters,

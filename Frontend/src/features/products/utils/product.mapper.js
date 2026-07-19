@@ -1,13 +1,21 @@
 const FALLBACK_IMAGE = "https://via.placeholder.com/300x200?text=No+Image";
 
 export function mapProductToCard(product) {
+  const assetCount = Number(product.asset_count || 0);
+  const rentedCount = Number(product.rented_count || 0);
+  const availableStock = Math.max(0, assetCount - rentedCount);
+
   return {
     id: product.p_id,
     image: product.image || FALLBACK_IMAGE,
     price: `₹${product.sales_price || product.price || 0}`,
     duration: "Month",
     colors: [],
-    outOfStock: product.quantity <= 0,
+    outOfStock: availableStock <= 0,
+    assetCount,
+    rentedCount,
+    availableStock,
+    lowOnStock: availableStock > 0 && availableStock < 5,
     pname: product.pname,
     to_publish: product.to_publish,
     c_id: product.c_id,

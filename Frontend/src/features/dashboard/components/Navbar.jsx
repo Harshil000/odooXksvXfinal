@@ -23,6 +23,7 @@ const Navbar = ({
   const displayName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Vendor"
     : "Vendor";
+  const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
   const isVendor = !!(user?.role || user?.v_id || user?.c_id);
 
@@ -145,6 +146,16 @@ const Navbar = ({
           </>
         )}
       </div>
+
+      {!isVendor && user && (
+        <button
+          type="button"
+          className={`nav-history-btn ${activeSection === "history" ? "active" : ""}`}
+          onClick={() => navigate("/order-history")}
+        >
+          Order History
+        </button>
+      )}
 
       {/* Search */}
       <div className="nav-search">

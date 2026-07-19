@@ -8,8 +8,6 @@ import {
   UPDATE_QUOTATION_GROUP_CONFIRMED_QUERY,
   UPDATE_QUOTATION_CONVERTED_QUERY,
   SELECT_FREE_ASSET_QUERY,
-  SELECT_ANY_ASSET_QUERY,
-  INSERT_FALLBACK_ASSET_QUERY,
   SELECT_QUOTATION_RAW_GROUP_QUERY,
   SELECT_USER_BY_EMAIL_QUERY,
   INSERT_GUEST_USER_QUERY,
@@ -21,23 +19,15 @@ import {
 
 /**
  * Finds a free asset for a product in the given rental window.
- * Falls back to any asset, or creates a mock asset if none exist, ensuring checkout never blocks.
+ * Only returns assets that are not already booked in the requested window.
  */
-async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
+async function findFreeAsset(p_id, startDate, endDate, client) {
   const res = await client.query(SELECT_FREE_ASSET_QUERY, [p_id, startDate, endDate]);
   if (res.rows[0]) {
     return res.rows[0].asset_id;
   }
 
-  const anyAssetRes = await client.query(SELECT_ANY_ASSET_QUERY, [p_id]);
-  if (anyAssetRes.rows[0]) {
-    return anyAssetRes.rows[0].asset_id;
-  }
-
-  // Auto-generate fallback asset
-  const fallbackQr = `FALLBACK-${p_id.slice(0, 8)}-${Date.now()}`;
-  const createRes = await client.query(INSERT_FALLBACK_ASSET_QUERY, [p_id, fallbackQr]);
-  return createRes.rows[0].asset_id;
+  return null;
 }
 
 export async function createQuotation(data) {
@@ -176,6 +166,9 @@ export async function convertQuotationToOrder(q_id, addressData = {}) {
       // Fetch security deposit
       const planRes = await client.query(SELECT_RENT_PLAN_DEPOSIT_QUERY, [quote.r_id]);
       const depositAmount = planRes.rows[0] ? Number(planRes.rows[0].deposit || 0) : 0;
+      const quantity = Math.max(1, Number(quote.quantity || 1));
+      const totalPerUnit = Number(quote.total || 0) / quantity;
+      const depositPerUnit = depositAmount / quantity;
 
       const quoteQty = Number(quote.quantity || 1);
       const unitTotal = Number(quote.total || 0) / quoteQty;

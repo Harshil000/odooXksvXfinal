@@ -15,6 +15,7 @@ import Assets from "./features/assets/pages/Assets";
 import Invoices from "./features/invoices/pages/Invoices";
 import Reports from "./features/reports/pages/Reports";
 import Quotations from "./features/dashboard/pages/Quotations";
+import OrderHistory from "./features/orders/pages/OrderHistory";
 import { ProtectedRoute, PublicRoute, StorefrontRoute } from "./shared/components/RouteGuards";
 
 const router = createBrowserRouter([
@@ -66,6 +67,10 @@ const router = createBrowserRouter([
   {
     path: "/reports",
     element: <ProtectedRoute allowedRoles="vendor"><Reports /></ProtectedRoute>,
+  },
+  {
+    path: "/order-history",
+    element: <ProtectedRoute allowedRoles="user"><OrderHistory /></ProtectedRoute>,
   },
   {
     path: "/login",

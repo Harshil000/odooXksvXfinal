@@ -5,6 +5,7 @@ import {
   SELECT_RENTING_ORDER_BY_ID_QUERY,
   UPDATE_RENTING_ORDER_STATUS_QUERY,
   DELETE_RENTING_ORDER_QUERY,
+  SELECT_RENTING_ORDER_HISTORY_BY_USER_QUERY,
   SELECT_ENRICHED_ORDERS_BY_COMPANY_QUERY,
 } from "../queries/order.query.js";
 import { sendInvoiceEmail } from "../service/invoice-mail.service.js";
@@ -220,6 +221,12 @@ export async function deleteRentingOrder(rent_id) {
   const pool = getPool();
   const result = await pool.query(DELETE_RENTING_ORDER_QUERY, [rent_id]);
   return result.rows[0] || null;
+}
+
+export async function getRentingOrderHistoryByUserId(u_id) {
+  const pool = getPool();
+  const result = await pool.query(SELECT_RENTING_ORDER_HISTORY_BY_USER_QUERY, [u_id]);
+  return result.rows;
 }
 
 // ==========================================

@@ -9,6 +9,7 @@ import {
   getDashboardOrdersController,
   sendInvoiceController,
   getCustomerDetailsController,
+  getMyOrderHistoryController,
 } from "../controller/order.controller.js";
 
 const orderRoute = Router();
@@ -25,6 +26,9 @@ orderRoute.get("/dashboard", verifyToken, getDashboardOrdersController);
 
 // Send invoice email to customer
 orderRoute.post("/invoice/send", verifyAdmin, sendInvoiceController);
+
+// Current customer's order history
+orderRoute.get("/history/me", verifyToken, getMyOrderHistoryController);
 
 // Get all orders (open to all authenticated users - could be restricted later)
 orderRoute.get("/", verifyToken, getAllOrdersController);

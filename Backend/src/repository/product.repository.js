@@ -123,8 +123,21 @@ export async function createAsset(p_id, qr) {
 
 export async function getAssetsByProductId(p_id) {
   const pool = getPool();
+  
+  // Fetch product quantity
+  const prodRes = await pool.query("SELECT quantity FROM products WHERE p_id = $1", [p_id]);
+  const quantity = prodRes.rows[0]?.quantity || 0;
+  
   const result = await pool.query(SELECT_ASSETS_BY_PRODUCT_ID_QUERY, [p_id]);
-  return result.rows;
+  const currentAssets = result.rows;
+
+  if (currentAssets.length > quantity) {
+    const toDelete = currentAssets.slice(quantity).map(a => a.asset_id);
+    await pool.query("DELETE FROM assets WHERE asset_id = ANY($1::uuid[])", [toDelete]);
+    return currentAssets.slice(0, quantity);
+  }
+  
+  return currentAssets;
 }
 
 export async function getProductVariants(pname, c_id) {

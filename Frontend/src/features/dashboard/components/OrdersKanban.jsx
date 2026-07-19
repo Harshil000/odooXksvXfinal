@@ -19,11 +19,29 @@ function formatCurrency(amount) {
 }
 
 const COLUMNS = [
-  { id: "reserved", label: "Reserved", statuses: ["reserved", "quotation", "draft"] },
+  { id: "reserved", label: "Reserved", statuses: ["reserved", "pending", "quotation", "draft"] },
   { id: "picked_up", label: "Picked Up", statuses: ["picked_up"] },
   { id: "returned", label: "Returned", statuses: ["returned"] },
   { id: "cancelled", label: "Cancelled", statuses: ["cancelled"] },
 ];
+
+const START_STATUSES = ["reserved", "pending", "quotation", "draft"];
+const STATUS_LABELS = {
+  reserved: "Reserved",
+  picked_up: "Picked Up",
+  returned: "Returned",
+  cancelled: "Cancelled",
+};
+
+function getAllowedNextStatuses(status) {
+  if (START_STATUSES.includes(status)) return ["picked_up", "cancelled"];
+  if (status === "picked_up") return ["returned"];
+  return [];
+}
+
+function canMoveOrderStatus(fromStatus, toStatus) {
+  return fromStatus === toStatus || getAllowedNextStatuses(fromStatus).includes(toStatus);
+}
 
 const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
   const [updatingId, setUpdatingId] = useState(null);
@@ -31,6 +49,12 @@ const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const handleStatusChange = async (orderId, newStatus) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (order && !canMoveOrderStatus(order.status, newStatus)) {
+      alert(`Invalid move. ${STATUS_LABELS[order.status] || order.status} can only move to ${getAllowedNextStatuses(order.status).map((status) => STATUS_LABELS[status]).join(" or ") || "no further status"}.`);
+      return;
+    }
+
     try {
       setUpdatingId(orderId);
       await updateOrderStatus(orderId, newStatus);
@@ -61,6 +85,11 @@ const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
   };
 
   const handleDragOver = (event, columnId) => {
+    if (draggedOrder && !canMoveOrderStatus(draggedOrder.status, columnId)) {
+      event.dataTransfer.dropEffect = "none";
+      return;
+    }
+
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     setDragOverColumn(columnId);
@@ -71,6 +100,12 @@ const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
     setDragOverColumn(null);
 
     if (!draggedOrder || draggedOrder.status === newStatus) {
+      setDraggedOrder(null);
+      return;
+    }
+
+    if (!canMoveOrderStatus(draggedOrder.status, newStatus)) {
+      alert(`Invalid move. ${STATUS_LABELS[draggedOrder.status] || draggedOrder.status} can only move to ${getAllowedNextStatuses(draggedOrder.status).map((status) => STATUS_LABELS[status]).join(" or ") || "no further status"}.`);
       setDraggedOrder(null);
       return;
     }
@@ -181,10 +216,10 @@ const OrdersKanban = ({ orders = [], onStatusUpdate, onCardClick }) => {
                         onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         className="status-selector-dropdown"
                       >
-                        <option value="reserved">Reserved</option>
-                        <option value="picked_up">Picked Up</option>
-                        <option value="returned">Returned</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value={order.status}>{STATUS_LABELS[order.status] || order.status}</option>
+                        {getAllowedNextStatuses(order.status).map((status) => (
+                          <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+                        ))}
                       </select>
                     </div>
                   </div>

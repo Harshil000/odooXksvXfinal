@@ -19,9 +19,9 @@ const DELETE_USER_CART_QUERY = `
 
 /**
  * Finds a free asset for a product in the given rental window.
- * Falls back to any asset, or creates a mock asset if none exist, ensuring checkout never blocks.
+ * Only returns assets that are not already booked in the requested window.
  */
-async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
+async function findFreeAsset(p_id, startDate, endDate, client) {
   const freeAssetQuery = `
     SELECT a.asset_id 
     FROM assets a
@@ -32,6 +32,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
         WHERE ro.delivery_status NOT IN ('returned', 'cancelled')
           AND NOT (ro.end_date <= $2 OR ro.start_date >= $3)
       )
+    ORDER BY a.asset_id
     LIMIT 1;
   `;
   const res = await client.query(freeAssetQuery, [p_id, startDate, endDate]);
@@ -39,21 +40,7 @@ async function findOrCreateFreeAsset(p_id, startDate, endDate, client) {
     return res.rows[0].asset_id;
   }
 
-  const anyAssetQuery = `SELECT asset_id FROM assets WHERE p_id = $1 LIMIT 1;`;
-  const anyAssetRes = await client.query(anyAssetQuery, [p_id]);
-  if (anyAssetRes.rows[0]) {
-    return anyAssetRes.rows[0].asset_id;
-  }
-
-  // Auto-generate fallback asset
-  const createAssetQuery = `
-    INSERT INTO assets (p_id, qr) 
-    VALUES ($1, $2) 
-    RETURNING asset_id;
-  `;
-  const fallbackQr = `FALLBACK-${p_id.slice(0, 8)}-${Date.now()}`;
-  const createRes = await client.query(createAssetQuery, [p_id, fallbackQr]);
-  return createRes.rows[0].asset_id;
+  return null;
 }
 
 /**
@@ -161,13 +148,34 @@ export async function saveCheckoutTransaction({
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
+<<<<<<< HEAD
             unitDeposit,
+=======
+            rentalTotalPerUnit,
+            "INR",
+            false, // is_deposit
+            "captured", // status
+            method || "card",
+          ]);
+        }
+
+        // 2.3 Insert Deposit Payment (Audit Trail)
+        if (depositAmountPerUnit > 0) {
+          await client.query(INSERT_PAYMENT_QUERY, [
+            order.rent_id,
+            u_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            depositAmountPerUnit,
+>>>>>>> f415afe1c8abe37e75474d980140b43123e4ebff
             "INR",
             true, // is_deposit
             "captured", // status
             method || "card",
           ]);
         }
+<<<<<<< HEAD
 
         // 2.3 Decrement available product quantity by 1
         await client.query(
@@ -176,6 +184,8 @@ export async function saveCheckoutTransaction({
            WHERE p_id = $1`,
           [item.p_id]
         );
+=======
+>>>>>>> f415afe1c8abe37e75474d980140b43123e4ebff
       }
     }
 
