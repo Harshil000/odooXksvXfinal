@@ -4,7 +4,7 @@ dotenv.config();
 import app from "./src/app.js";
 import connectDB from "./src/config/database.js";
 import { initQdrantCollection } from "./src/service/qdrant.service.js";
-import { initCron } from "./src/cron/returnCron.js";
+// import { initCron } from "./src/cron/returnCron.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -16,7 +16,7 @@ try {
     // Initialize Qdrant collection after server starts (non-blocking)
     initQdrantCollection();
     // Initialize return checks background cron job
-    initCron();
+    // initCron();
   });
 } catch (err) {
   console.error(`Due to error: ${err.message}`);
