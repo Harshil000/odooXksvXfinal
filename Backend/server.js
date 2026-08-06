@@ -8,6 +8,8 @@ import { initQdrantCollection } from "./src/service/qdrant.service.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
+console.log("[startup] DATABASE_URL is", process.env.DATABASE_URL ? "SET" : "NOT SET");
+
 try {
   await connectDB();
 
@@ -19,6 +21,6 @@ try {
     // initCron();
   });
 } catch (err) {
-  console.error(`Due to error: ${err.message}`);
+  console.error("Startup error:", err);
   process.exit(1);
 }
