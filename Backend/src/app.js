@@ -49,6 +49,13 @@ app.use(
 app.use(morgan("dev"));
 
 // =========================
+// HEALTH CHECK
+// =========================
+app.get("/", (_req, res) => {
+  res.status(200).json({ status: "ok", message: "Server is running" });
+});
+
+// =========================
 // ROUTES
 // =========================
 app.use("/api/auth", authRoute);
