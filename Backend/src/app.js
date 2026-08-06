@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import { handleError } from "./middleware/error.middleware.js";
 import authRoute from "./routes/auth.route.js";
 import profileRoute from "./routes/profile.route.js";
@@ -13,6 +15,9 @@ import paymentRoute from "./routes/payment.route.js";
 import deliveryRouteRoute from "./routes/deliveryRoute.route.js";
 import quotationRoute from "./routes/quotation.route.js";
 import morgan from "morgan";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -51,12 +56,12 @@ app.use(morgan("dev"));
 // =========================
 // HEALTH CHECK
 // =========================
-app.get("/", (_req, res) => {
+app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running" });
 });
 
 // =========================
-// ROUTES
+// API ROUTES
 // =========================
 app.use("/api/auth", authRoute);
 app.use("/api/profile", profileRoute);
@@ -68,6 +73,18 @@ app.use("/api/cart", cartRoute);
 app.use("/api/payment", paymentRoute);
 app.use("/api/delivery-routes", deliveryRouteRoute);
 app.use("/api/quotations", quotationRoute);
+
+// =========================
+// SERVE FRONTEND
+// =========================
+const frontendDist = path.resolve(__dirname, "../../Frontend/dist");
+app.use(express.static(frontendDist));
+
+// Catch-all: serve index.html for any non-API route (React Router SPA)
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) return next();
+  res.sendFile(path.join(frontendDist, "index.html"));
+});
+
 app.use(handleError);
-// Trigger restart
 export default app;
