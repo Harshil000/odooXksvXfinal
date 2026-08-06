@@ -2,11 +2,20 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { saveCheckoutTransaction } from "../repository/payment.repository.js";
 
-// Initialize Razorpay SDK using credentials from environment variables
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_ID,
-  key_secret: process.env.RAZORPAY_ID_SECRET,
-});
+// Lazy-initialize Razorpay SDK so the server can start even if keys are missing
+let _razorpay;
+function getRazorpay() {
+  if (!_razorpay) {
+    if (!process.env.RAZORPAY_ID || !process.env.RAZORPAY_ID_SECRET) {
+      throw new Error("RAZORPAY_ID and RAZORPAY_ID_SECRET environment variables are required");
+    }
+    _razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_ID,
+      key_secret: process.env.RAZORPAY_ID_SECRET,
+    });
+  }
+  return _razorpay;
+}
 
 /**
  * Creates a Razorpay Order for checkout.
@@ -26,7 +35,7 @@ export async function createRazorpayOrderController(req, res, next) {
       receipt: `receipt_checkout_${Date.now()}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpay().orders.create(options);
     return res.status(201).json({
       key_id: process.env.RAZORPAY_ID,
       order,
@@ -80,7 +89,7 @@ export async function verifyRazorpayPaymentController(req, res, next) {
     // 2. Fetch payment method details from Razorpay API
     let method = "card";
     try {
-      const paymentInfo = await razorpay.payments.fetch(razorpay_payment_id);
+      const paymentInfo = await getRazorpay().payments.fetch(razorpay_payment_id);
       method = paymentInfo.method || "card";
     } catch (err) {
       console.warn("[Razorpay] Failed to fetch payment method details:", err.message);
