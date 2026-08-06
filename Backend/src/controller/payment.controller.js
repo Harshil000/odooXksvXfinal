@@ -4,8 +4,8 @@ import { saveCheckoutTransaction } from "../repository/payment.repository.js";
 
 // Initialize Razorpay SDK using credentials from environment variables
 const razorpay = new Razorpay({
-  key_id: process.env.RAZOR_ID,
-  key_secret: process.env.RAZOR_ID_SECRET,
+  key_id: process.env.RAZORPAY_ID,
+  key_secret: process.env.RAZORPAY_ID_SECRET,
 });
 
 /**
@@ -28,7 +28,7 @@ export async function createRazorpayOrderController(req, res, next) {
 
     const order = await razorpay.orders.create(options);
     return res.status(201).json({
-      key_id: process.env.RAZOR_ID,
+      key_id: process.env.RAZORPAY_ID,
       order,
     });
   } catch (error) {
@@ -64,7 +64,7 @@ export async function verifyRazorpayPaymentController(req, res, next) {
     }
 
     // 1. Verify payment signature validity
-    const hmac = crypto.createHmac("sha256", process.env.RAZOR_ID_SECRET);
+    const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_ID_SECRET);
     hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
     const generated_signature = hmac.digest("hex");
 
